@@ -16,7 +16,8 @@ def write_image(path, img):
     plt.savefig(path, bbox_inches='tight')
     #, img, format = 'png')
 
-img = io.imread('Desktop\Summer_Intern_20\_OD.jpeg')
+#img = io.imread('Desktop\Summer_Intern_20\_OD.jpeg')
+img = io.imread('Documents\GitHub\Optic_Disk\_OD.jpeg')
 plt.imshow(img)
 plt.close()
 #cv2.imshow('image',img)
@@ -85,7 +86,7 @@ for i in range(0, 16):
         #plt.show(block=False)
         #time.sleep(1)
         #plt.close(1) 
-        v = 'Desktop\Summer_Intern_20\Output\Result' + '_' + str(blur) + '_' + str(alpha) + '_' + str(beta) + '_' + str(gamma) + '.png'
+        v = 'Documents\GitHub\Optic_Disk\Output\Result' + '_' + str(blur) + '_' + str(alpha) + '_' + str(beta) + '_' + str(gamma) + '.png'
         write_image(v, img)
         plt.clf()
         plt.close('all')

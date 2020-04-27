@@ -41,7 +41,8 @@ Error = 0; %There is no error
 %I=['image',num2str(im_num),'.tif'];
 %I=['image',num2str(im_num),'prime.tif'];
 %I=['image',num2str(im_num),'.jpg'];
-I=['image',num2str(im_num),'prime.jpg'];
+%I=['image',num2str(im_num),'prime.jpg'];
+I = '_OD.jpeg';
 fname = I;
 fprintf('\nWorking on %s\n',I)
 I_temp = ['Localized',fname];

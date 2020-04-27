@@ -16,19 +16,29 @@ def write_image(path, img):
     plt.savefig(path, bbox_inches='tight')
     #, img, format = 'png')
 
-#img = io.imread('Desktop\Summer_Intern_20\_OD.jpeg')
-img = cv2.imread('Desktop\Summer_Intern_20\_OD.jpeg')
-#lt.imshow(img)
-#plt.close()
-#cv2.imshow('image',img)
+img = io.imread('Documents\GitHub\Optic_Disk\_OD.jpeg')
+#img = cv2.imread('Documents\GitHub\Optic_Disk\_OD.jpeg')
 
+#plt.show(img)
+#plt.close() 
+
+cv2.imshow('i',img)
+#plt.
 img = rgb2gray(img)
+img = img.astype(np.uint8)
+edges = cv2.Canny(img, 20, 30)
+#cv2.imshow('canny', edges)
 
 blur = cv2.GaussianBlur(img,(5,5),0)
 smooth = cv2.addWeighted(blur,1.5,img,-0.5,0)
 
-cv2.imshow('img',img)
+#cv2.imshow('blur', blur)
+#cv2.imshow('smooth', smooth)
 
+#images = np.hstack((img, edges, blur, smooth))
+
+#cv2.imshow('Frame', images)
+time.sleep(1000)
 
 """
 s = np.linspace(0, 2*np.pi, 400)
