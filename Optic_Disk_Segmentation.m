@@ -42,7 +42,8 @@ Error = 0; %There is no error
 %I=['image',num2str(im_num),'prime.tif'];
 %I=['image',num2str(im_num),'.jpg'];
 %I=['image',num2str(im_num),'prime.jpg'];
-I = '_OD.jpeg';
+%I = '_OD.jpeg';
+I = 'download.jpg';
 fname = I;
 fprintf('\nWorking on %s\n',I)
 I_temp = ['Localized',fname];
@@ -1442,6 +1443,7 @@ function Xcol_seg = localization(I)
         I_bw = rgb2gray(I);
     end
     [M, N, O] = size(I);
+    
     % global p;
     % global L;
     % global Th;
@@ -1451,11 +1453,14 @@ function Xcol_seg = localization(I)
     % global min_val;
     L = 256;
     H=imhist(I_bw);
+    
     %figure,imhist(I)
     p = H / (M * N);
+    
     %figure(2); plot(h)
     max_val=double(max(max(I_red)));
     min_val=double(min(min(I_red))+1);
+    
     %*********************************************************************
     % 1. Define problem hyperspace and plot in 2D
     %*********************************************************************
@@ -1463,7 +1468,8 @@ function Xcol_seg = localization(I)
     % No of thresholds
     D = Th*2; % no of dimensions
     range_min = min_val*ones(1,D);
-    range_max = max_val*ones(1,D);% minimum & maximum range;
+    range_max = max_val*ones(1,D); % minimum & maximum range;
+    disp(range_max)
     alpha=1.5;
     %*********************************************************************
     % 2. initialize the population
@@ -1502,6 +1508,7 @@ function Xcol_seg = localization(I)
                 while r(1)==r(2) || r(2)== r(3) || min(r)==0 || max(r)>NP
                     r = ceil(rand(1,3)*NP);
                 end
+                
                 v(i,:) = x(r(1),:) + F*(x(r(2),:) - x(r(3),:));
                 for j = 1:D
                     if rand > CR
@@ -1562,7 +1569,7 @@ function Xcol_seg = localization(I)
     % tstop1(im_num)=timestop/2;
     %figure,imshow(X1);
     %% Trimp the image first
-    XX1 = trimp(X1,trim_pxl);
+    XX1 = Trimp2(X1,trim_pxl);%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %XX1 = X1;
     %% New Code cup is the largest spot
     X3 = XX1==255;
@@ -1600,11 +1607,11 @@ function Xcol_seg = localization(I)
     %% Extract image
     for i = newx_up :newx_down
         for j = newy_left : newy_right
-            Xcol_seg(i - newx_up + 1, j - newy_left + 1,:)=I(i,j,:);
+            Xcol_seg(i - newx_up + 1, j - newy_left + 1,:) = I(i,j,:);
         end
     end
     % clear p;
-    % clear L;
+    % clear L; 
     % clear Th;
     % clear alpha;
     %
@@ -2120,7 +2127,7 @@ end
 
 function BW2 = Trimp2(BW,pixl)
     [M,N] = size(BW);
-    % figure, imshow(BW);
+    figure, imshow(BW);
     BW2 = BW;
     for i=1:1:M
         for j=1:1:N
@@ -2129,13 +2136,17 @@ function BW2 = Trimp2(BW,pixl)
             end
         end
     end
-    % figure,imshow(BW);
+    %figure,imshow(BW);
     BW1 = BW;
     CC = bwconncomp(BW);
+    display(CC);
     numPixels = cellfun(@numel,CC.PixelIdxList);
+    display(numPixels);
     % Largest connected compnent
     numPixels_temp = sort(numPixels,'descend');
+    %display(numPixels_temp);
     idx = find(numPixels==numPixels_temp(1));
+    display(idx);
     %figure, imshow(CC.PixelIdxList{idx})
     BW1(CC.PixelIdxList{idx}) = 0;
     % figure, imshow(BW1);
