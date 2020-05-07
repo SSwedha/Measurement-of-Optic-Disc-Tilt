@@ -3,6 +3,7 @@ import time
 import math
 import random
 import numpy as np
+import numpy.matlib as npmatlib
 import statistics as stat
 import matplotlib.pyplot as plt
 from skimage import io
@@ -173,6 +174,101 @@ def filter(img):
   plt.title('Sobel Y'), plt.xticks([]), plt.yticks([])
 
   plt.show()
+
+def meshgrid(x,y,z):
+  if (nargin == 0 or (nargin > 1 and nargout > nargin)):
+    print('meshgrid:NotEnoughInputs') 
+  #end
+
+  if (nargin == 2 or (nargin == 1 and nargout < 3)): #% 2-D array case
+    if nargin == 1:
+      y = x 
+    #end
+    if isempty(x) or isempty(y):
+      xx = np.zeros(0)
+      yy = np.zeros(0) 
+    else:
+      xrow = np.transpose(np.transpose(x.flatten()))  #% Make sure x is a full row vector.
+      ycol = np.transpose(y.flatten())                #% Make sure y is a full column vector.
+      xx = npmatlib.repmat(xrow,size(ycol)) 
+      yy = npmatlib.repmat(ycol,size(xrow)) 
+    #end
+  else:  #% 3-D array case
+    if nargin == 1:
+      y = x 
+      z = x 
+    #end
+    if isempty(x) or isempty(y) or isempty(z):
+      xx = np.zeros(0) 
+      yy = np.zeros(0) 
+      zz = np.zeros(0) 
+    else:
+      nx = numel(x) 
+      ny = numel(y) 
+      nz = numel(z) 
+      xx = np.reshape(x,[1,nx,1])  #% Make sure x is a full row vector.
+      yy = np.reshape(y,[ny,1,1])  #% Make sure y is a full column vector.
+      zz = np.reshape(z,[1,1,nz])  #% Make sure z is a full page vector.
+      xx = npmatlib.repmat(xx, ny, 1, nz) 
+      yy = npmatlib.repmat(yy, 1, nx, nz) 
+      zz = npmatlib.repmat(zz, ny, nx, 1) 
+    #end
+  #end
+  return [xx, yy, zz]
+
+def FindBloodVesselPoint2(M,N,BloodVessel,L,cx,cy,Eye_side):
+  Edges = np.zeros(M,N) 
+  [x,y] = meshgrid(list(range(N)),list(range(M))) 
+  uperHalfL = round(L/2) 
+  downHalfL = L - uperHalfL 
+  flag = 0 
+  x1 = cx 
+  y1 = max(0,cy-uperHalfL) 
+  y2 = y1+L 
+  if Eye_side == 'R':
+    a = 1 
+  else:
+    a = -1 
+  max_pixl = np.zeros(1,0) 
+  while(flag==0):
+    Img_square = np.zeros(M,N) 
+    x2 = x1+a*L 
+    if x2>N or x2<0:
+      flag = 1 
+    else:
+      xx1 = min(x1,x2) 
+      xx2 = max(x1,x2) 
+      for i in range(M):
+        for j in range(N):
+          if x[i][j]>=xx1 and x[i][j]<=xx2 and y[i][j]>=y1 and y[i][j]<=y2:
+            #%Img_square(j,i) = 1 
+            Img_square[i][j] = 1 
+          #end
+        #end
+      #end
+      Edges = Edges + edge(Img_square,'sobel') 
+      point = np.zeros(M,N)
+      for i in range(M):
+        for j in range(N):
+          point[i][j] = BloodVessel[i][j]*Img_square[i][j] 
+      max_pixl = [max_pixl,nnz(point)] 
+      x1 = x2 
+    #end
+  #end
+  I = max(max_pixl) 
+  opt_square = np.zeros(M,N) 
+  x1 = cx+a*L*(I-1) 
+  x2 = x1+a*L 
+  xx1 = min(x1,x2) 
+  xx2 = max(x1,x2) 
+  for i in range(M):
+    for j in range(N):
+      if x[i][j]>=xx1 and x[i][j]<=xx2 and y[i][j]>=y1 and y[i][j]<=y2:
+        opt_square[i][j] = 1 
+      #end
+    #end
+  #end
+  return [Edges,I,opt_square,max_pixl]
 
 """
 Trapezoidal membership function generator.

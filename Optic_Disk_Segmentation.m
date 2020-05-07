@@ -1469,7 +1469,6 @@ function Xcol_seg = localization(I)
     D = Th*2; % no of dimensions
     range_min = min_val*ones(1,D);
     range_max = max_val*ones(1,D); % minimum & maximum range;
-    disp(range_max)
     alpha=1.5;
     %*********************************************************************
     % 2. initialize the population
@@ -1587,8 +1586,9 @@ function Xcol_seg = localization(I)
     % end
     %Calculating the cetroid of the largest component
 
-    S = regionprops(CC,'Centroid'); % Calculate centroids for connected components in the image using regionprops.
+    S = regionprops(CC,'Centroid') % Calculate centroids for connected components in the image using regionprops.
     cntr = cat(1, S.Centroid); %Concatenate structure array containing centroids into a single matrix.
+    
     centroid_x=round(cntr(idx,1));
     centroid_y=round(cntr(idx,2));
     
@@ -2139,14 +2139,11 @@ function BW2 = Trimp2(BW,pixl)
     %figure,imshow(BW);
     BW1 = BW;
     CC = bwconncomp(BW);
-    display(CC);
     numPixels = cellfun(@numel,CC.PixelIdxList);
-    display(numPixels);
     % Largest connected compnent
     numPixels_temp = sort(numPixels,'descend');
     %display(numPixels_temp);
     idx = find(numPixels==numPixels_temp(1));
-    display(idx);
     %figure, imshow(CC.PixelIdxList{idx})
     BW1(CC.PixelIdxList{idx}) = 0;
     % figure, imshow(BW1);
