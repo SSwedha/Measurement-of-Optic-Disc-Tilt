@@ -43,7 +43,7 @@ Error = 0; %There is no error
 %I=['image',num2str(im_num),'.jpg'];
 %I=['image',num2str(im_num),'prime.jpg'];
 %I = '_OD.jpeg';
-I = 'download.jpg';
+I = '_OD.jpeg';
 fname = I;
 fprintf('\nWorking on %s\n',I)
 I_temp = ['Localized',fname];
@@ -1452,8 +1452,7 @@ function Xcol_seg = localization(I)
     % global max_val;
     % global min_val;
     L = 256;
-    H=imhist(I_bw);
-    
+    H=imhist(I_bw)
     %figure,imhist(I)
     p = H / (M * N);
     
