@@ -6,8 +6,8 @@ import argparse
 import numpy as np
 import numpy.matlib as npmatlib
 import matplotlib.pyplot as plt
-import statistics as stat
 from PIL import Image, ImageFilter
+import statistics as stat
 from skimage import io
 from skimage import data
 from skimage import color
@@ -19,14 +19,20 @@ from skimage.filters import meijering, sato, frangi, hessian
 from scipy.ndimage.filters import uniform_filter
 from scipy.ndimage.measurements import variance
 
-def lee_filter(img, size):
-    img_mean = uniform_filter(img, (size, size))
-    img_sqr_mean = uniform_filter(img**2, (size, size))
-    img_variance = img_sqr_mean - img_mean**2
-    overall_variance = variance(img)
-    img_weights = img_variance / (img_variance + overall_variance)
-    img_output = img_mean + img_weights * (img - img_mean)
-    return img_output
+def auto_canny(image, sigma = 0.7):
+    # compute the median of the single channel pixel intensities
+    v = np.median(image)
+    # apply automatic Canny edge detection using the computed median
+    lower = int(max(0, (1.0 - sigma) * v))
+    upper = int(min(255, (1.0 + sigma) * v)/2)
+    #print(lower)
+    #print(upper)
+    edged = cv2.Canny(image, lower, upper)
+    # return the edged image
+    return edged
+
+def nothing(x):
+    pass
 
 def crimmins(data):
     new_image = data.copy()
@@ -240,12 +246,35 @@ def crimmins(data):
     data = new_image
     return new_image.copy()
 
+def crop(img, i):
+    # Returns dimensions of image
+    height, width = img.shape[0:2]
+    # Top and Bottom range
+    startrow = int(height*.12)
+    endrow = int(height*.88)
+    startcol = int(width*.05)
+    endcol = int(width*0.95)
+    img = img[startrow:endrow, startcol:endcol]
+    height, width = img.shape[0:2]
+    # Finds the side of the Optic Disk
+    side = find_eyeside(img, i)
+    # Left and Right range 
+    if side == 'r':
+        startcol = int(width*.40)
+        endcol = int(width-10)
+    elif side == 'l':
+        startcol = int(10)
+        endcol = int(width*.60)
+    image = img[0:height, startcol:endcol]
+    height, width = img.shape[0:2]
+    image = image[20:520, 20:520]
+    return image
+
 def conservative_smoothing_gray(data, filter_size):
     temp = []
     indexer = filter_size // 2
     new_image = data.copy()
     nrow, ncol = data.shape[0:2]
-
     for i in range(nrow):
         for j in range(ncol):
             for k in range(i-indexer, i+indexer+1):
@@ -262,7 +291,6 @@ def conservative_smoothing_gray(data, filter_size):
             elif data[i,j] < min_value:
                 new_image[i,j] = min_value
             temp =[]
-    
     return new_image.copy()
 
 """
@@ -312,9 +340,6 @@ def window_function(img):
     cv2.waitKey(0)
 """
 
-def nothing(x):
-    pass
-
 def write_image(path, img):
     # img = img*(2**16-1)
     # img = img.astype(np.uint16)
@@ -344,33 +369,16 @@ def find_eyeside(img, i):
         side = 'l'  
     return side
 
-def crop(img, i):
-    # Returns dimensions of image
-    height, width = img.shape[0:2]
-    # Top and Bottom range
-    startrow = int(height*.12)
-    endrow = int(height*.88)
-    startcol = int(width*.05)
-    endcol = int(width*0.95)
-    img = img[startrow:endrow, startcol:endcol]
-
-    height, width = img.shape[0:2]
-    # Finds the side of the Optic Disk
-    side = find_eyeside(img, i)
-    # Left and Right range 
-    if side == 'r':
-        startcol = int(width*.40)
-        endcol = int(width-10)
-    elif side == 'l':
-        startcol = int(10)
-        endcol = int(width*.60)
-    image = img[0:height, startcol:endcol]
-    height, width = img.shape[0:2]
-    image = image[20:520, 20:520]
-    return image
+def lee_filter(img, size):
+    img_mean = uniform_filter(img, (size, size))
+    img_sqr_mean = uniform_filter(img**2, (size, size))
+    img_variance = img_sqr_mean - img_mean**2
+    overall_variance = variance(img)
+    img_weights = img_variance / (img_variance + overall_variance)
+    img_output = img_mean + img_weights * (img - img_mean)
+    return img_output
 
 def segment(img, blur=0.01, alpha=0.1, beta=0.1, gamma=0.001):
-    
     height, width = img.shape[0:2]
     # Initial contour
     s = np.linspace(0, 2*np.pi, 400)
@@ -402,18 +410,6 @@ def segment(img, blur=0.01, alpha=0.1, beta=0.1, gamma=0.001):
     ax.set_xticks([]), ax.set_yticks([])
     ax.axis([0, img.shape[1], img.shape[0], 0])
     plt.show()
-
-def auto_canny(image, sigma = 0.7):
-    # compute the median of the single channel pixel intensities
-    v = np.median(image)
-    # apply automatic Canny edge detection using the computed median
-    lower = int(max(0, (1.0 - sigma) * v))
-    upper = int(min(255, (1.0 + sigma) * v)/2)
-    #print(lower)
-    #print(upper)
-    edged = cv2.Canny(image, lower, upper)
-    # return the edged image
-    return edged
 
 def filterimage(img):
     #cv2.imshow('i',img)
@@ -474,6 +470,52 @@ def filterimage(img):
 
     plt.show()
 
+def houghcircles(img):
+    #creating mask??
+    #median_blur_copy_img = cv2.medianBlur(copy_img, 5)
+    m, n = img.shape[0:2]
+    copy_img = np.zeros((m,n))
+    copy_img = img.copy()
+
+    median_blur_copy_img = cv2.medianBlur(img, 5)
+    circles = cv2.HoughCircles(median_blur_copy_img, cv2.HOUGH_GRADIENT, dp=1, minDist=200, param1=25, param2=50, minRadius=0, maxRadius=0)
+    circles = np.around(circles)
+    circles = np.uint16(circles)
+    #print(circles)
+    
+    # draw mask
+    mask = np.full((img.shape[0], img.shape[1]), 0, dtype=np.uint8) 
+    mask = np.full((img.shape[0], img.shape[1]), 0, dtype=np.uint8)
+    for i in circles[0, :]:
+        cv2.circle(mask, (i[0], i[1]), i[2], (255, 255, 255), -1)
+
+    # get first masked value (foreground)
+    #fg = cv2.bitwise_or(copy_img, copy_img, mask=mask)
+    fg = cv2.bitwise_or(img, img, mask=mask)
+
+    # get second masked value (background) mask must be inverted
+    mask = cv2.bitwise_not(mask)
+    # background = np.full(copy_img.shape, 255, dtype=np.uint8)
+    background = np.full(img.shape, 255, dtype=np.uint8)
+    bk = cv2.bitwise_or(background, background, mask=mask)
+    
+    # combine foreground+background
+    final = cv2.bitwise_or(fg, bk)
+
+    plt.subplot(2,3,1),plt.imshow(img,cmap = 'gray')
+    plt.title('equ'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,3,2),plt.imshow(copy_img,cmap = 'gray')
+    plt.title('equ+bottomHat1'), plt.xticks([]), plt.yticks([])            
+    plt.subplot(2,3,3),plt.imshow(bk,cmap = 'gray')
+    plt.title('bk(mask)'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,3,4),plt.imshow(fg,cmap = 'gray')
+    plt.title('fg'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,3,5),plt.imshow(final,cmap = 'gray')
+    plt.title('final'), plt.xticks([]), plt.yticks([])
+    plt.show()
+
+    return final
+
 def removeBloodVessels(img,th_0,th_1):
     globalMin = 0 
     globalMax = 255   # it is the maximum gray level of the image
@@ -487,8 +529,7 @@ def removeBloodVessels(img,th_0,th_1):
     kernel0 = np.zeros((25,25),np.uint8)
     copy_img = np.zeros((m,n))
     copy_img = img.copy()
-    plt.subplot(2,3,4),plt.imshow(copy_img,cmap = 'gray')
-    plt.title('Original'), plt.xticks([]), plt.yticks([])
+
     for i in range(m):
         for j in range(n):
             copy_img[i,j] = ((copy_img[i,j]-localMin)* ((globalMax-globalMin))/((localMax-localMin))) + globalMin 
@@ -521,137 +562,185 @@ def removeBloodVessels(img,th_0,th_1):
     for i in range(m):
         for j in range(n):
             copy_img[i,j] = img[i,j] + bottomHat1[i,j]
-            #if(copy_img[i,j]>255):
-            #    copy_img[i,j] = 255
-                
-    plt.subplot(2,3,1),plt.imshow(img,cmap = 'gray')
+            if(copy_img[i,j]>255):
+                copy_img[i,j] = 255
+    """                     
+    plt.subplot(2,2,1),plt.imshow(img,cmap = 'gray')
     plt.title('crim'), plt.xticks([]), plt.yticks([])        
-    plt.subplot(2,3,2),plt.imshow(bottomHat1,cmap = 'gray')
+    plt.subplot(2,2,2),plt.imshow(bottomHat1,cmap = 'gray')
     plt.title('bottomHat1'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,3),plt.imshow(copy_img,cmap = 'gray')
+    plt.subplot(2,2,3),plt.imshow(bottomHat0,cmap = 'gray')
+    plt.title('bottomHat0'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,2,4),plt.imshow(copy_img,cmap = 'gray')
     plt.title('crim+bottomHat1'), plt.xticks([]), plt.yticks([])
     plt.show()
-    
-"""
-def removeBloodVessels(img, th0, th1, index):
-    print('removingBloodVessels')
-    globalMin = 0 
-    globalMax = 255   # it is the maximum gray level of the image
+    """
 
-    img_flat = img.flatten()
-    localMin = np.min(img_flat[np.nonzero(img_flat)])   # minimum non-zero intensity value of the taken image
-    localMax = max(img_flat)   # maximum intensity value of the taken image
-
-    m, n = img.shape[0:2]
-    kernel1 = np.ones((25,25),np.uint8)
-    kernel0 = np.zeros((25,25),np.uint8)
-    for i in range(m):
-        for j in range(n):
-            img[i,j] = ((img[i,j]-localMin)* ((globalMax-globalMin))/((localMax-localMin))) + globalMin 
-    cv2.waitKey(0)
-    closing1 = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel1)
-    closing0 = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel0)
-
-    #cv2.imshow('closing0',closing0)
     #cv2.waitKey(0)
-    #cv2.imshow('closing1',closing1)
-    #cv2.waitKey(0)    
-    
-    bottomHat1 = closing1 - img
-    bottomHat0 = closing0 - img
-    
-    #cv2.imshow('bottomHat0',bottomHat0)
-    #cv2.waitKey(0)
-    for i in range(m):
-        for j in range(n):
-            if (bottomHat0[i,j] < th0):
-                bottomHat0[i,j] = 0
-            else:
-                bottomHat0[i,j] = 255
-            if bottomHat1[i,j] < th1:
-                bottomHat1[i,j] = 0
-    #cv2.imshow('bottomHat0 after for',bottomHat0)
-    #cv2.waitKey(0)
-    #cv2.imshow('bottomHat1 after for',bottomHat1)
-    #cv2.waitKey(0)                      
-
-    alpha = 2
-    beta = -125
-    bottomHat1 = cv2.convertScaleAbs(bottomHat1, alpha=alpha, beta=beta)
-    #cv2.imshow('bottomHat1 after contrast',bottomHat1)
-    #cv2.waitKey(0)
-    new_greyimage = np.zeros((m,n),np.uint8)
-    for i in range(m):
-        for j in range(n):
-            if (bottomHat0[i,j] == 255):
-                new_greyimage[i,j] = bottomHat1[i,j]
-    cv2.imshow('grey',new_greyimage)
-    v = 'Documents\GitHub\Optic_Disk\RemoveVessels\img_'+ str(index) + '-' + str(th0) + '_' + str(th1) + '.jpg'
-    write_image(v,new_greyimage)
-    
-    cv2.waitKey(0)
     #enhancedVessel1 = meijering(new_greyimage)
     #enhancedVessel2 = frangi(new_greyimage)
     #new_greyimage = cv2.addWeighted(enhancedVessel1,0.5,enhancedVessel2,0.5,0.0)
     #cv2.imshow('fuse',new_greyimage)
     #cv2.waitKey(0)
-"""
 
-def trackbar(image):
+    return bottomHat0, bottomHat1
+    
+def threshold_tb(image, threshold = 70, th_type = 3):
+    alpha = 180
+    beta = 125
+    s = 0
     cv2.namedWindow('Contrast')
-
     # create trackbars for color change
-    cv2.createTrackbar('alpha','Contrast', 0, 255, nothing)
-    cv2.createTrackbar('beta','Contrast', 0, 255, nothing)
-    cv2.createTrackbar('Threshold','Contrast', 0, 255, nothing)
-    cv2.createTrackbar('Type','Contrast', 0, 4, nothing)
+    cv2.createTrackbar('alpha','Contrast', alpha, 255, nothing)
+    cv2.createTrackbar('beta','Contrast', beta, 255, nothing)
+    cv2.createTrackbar('Threshold','Contrast', threshold, 255, nothing)
+    cv2.createTrackbar('Type','Contrast', th_type, 4, nothing)
     # create switch for ON/OFF functionality
-    switch = '0 : OFF \n1 : ON'
-    cv2.createTrackbar(switch, 'Contrast',0,1,nothing)
-        
+    cv2.createTrackbar('Switch', 'Contrast', s, 1, nothing)
     # get current positions of four trackbars
-       
-    while(1):
+    while(s == 0):
         alpha = cv2.getTrackbarPos('alpha','Contrast')
         beta = cv2.getTrackbarPos('beta','Contrast')
         threshold = cv2.getTrackbarPos('Threshold','Contrast')
         th_type = cv2.getTrackbarPos('Type','Contrast')
-        s = cv2.getTrackbarPos(switch,'Contrast')
-        new_image1 = cv2.convertScaleAbs(image, alpha=alpha/100.0, beta=-1*beta)
-        cv2.imshow('image',new_image1)
-        k = cv2.waitKey(1) & 0xFF
-        if k == ord('q'):
-            break
+        s = cv2.getTrackbarPos('Switch','Contrast')
+        """
         #0: Binary
         #1: Binary Inverted
         #2: Threshold Truncated
         #3: Threshold to Zero
         #4: Threshold to Zero Inverted
+        """
         _, dst = cv2.threshold(image, threshold, 255, th_type)
+        new_image = dst
         cv2.imshow('Threshold', dst)
+        k = cv2.waitKey(1) & 0xFF
+        if k == 27:
+            break
+    cv2.imshow('Threshold', new_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    return dst
 
+def bottomhat_tb(image,  th_0 = 200, th_1 = 10):
+    s = 0
+    cv2.namedWindow('Trackbar')
+    img = image
+    # create trackbars for color change
+    cv2.createTrackbar('Bottom Hat 0','Trackbar', th_0, 255, nothing)
+    cv2.createTrackbar('Bottom Hat 1','Trackbar', th_1, 255, nothing)
+    cv2.createTrackbar('Switch', 'Trackbar', 0, 1, nothing)
+    # get current positions of four trackbars
+    while(s==0):
+        th_0 = cv2.getTrackbarPos('Bottom Hat 0','Trackbar')
+        th_1 = cv2.getTrackbarPos('Bottom Hat 1','Trackbar')
+        s = cv2.getTrackbarPos('Switch','Trackbar')
+        bottomhat0, bottomhat1 = removeBloodVessels(image, th_0, th_1)
+        image = img
+        cv2.imshow('BottomHat0', bottomhat0)
+        #cv2.imshow('BottomHat1', bottomhat1)
+        k = cv2.waitKey(1) & 0xFF
+        if k == 27:
+            break
+    return bottomhat0, bottomhat1
+
+def adaptive_tb(image, mth1=11, mth2=2, gth1=11, gth2=2):
+    s = 0
+    img = cv2.medianBlur(image,5)
+    cv2.namedWindow('Contrast')
+    # create trackbars for color change
+    cv2.createTrackbar('Mean Threshold 1', 'Contrast', mth1, 255, nothing)
+    cv2.createTrackbar('Mean Threshold 2', 'Contrast', mth2, 255, nothing)
+    cv2.createTrackbar('Gaussian Threshold 1', 'Contrast', gth1, 255, nothing)
+    cv2.createTrackbar('Gaussian Threshold 2', 'Contrast', gth2, 255, nothing)
+    # create switch for ON/OFF functionality
+    cv2.createTrackbar('Switch', 'Contrast', s, 1, nothing)
+    # get current positions of four trackbars
+    while(s == 0):
+        mth1 = cv2.getTrackbarPos('Mean Threshold 1','Contrast')
+        mth2 = cv2.getTrackbarPos('Mean Threshold 2','Contrast')
+        gth1 = cv2.getTrackbarPos('Gaussian Threshold 1','Contrast')
+        gth2 = cv2.getTrackbarPos('Gaussian Threshold 2','Contrast')
+        s = cv2.getTrackbarPos('Switch','Contrast')
+        #_, dst = cv2.threshold(image, threshold, 255, th_type)
+        im1 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+        im2 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        cv2.imshow('Image', image)
+        cv2.imshow('AdaptiveMean', im1)
+        cv2.imshow('AdaptiveGaussian', im2)
+        k = cv2.waitKey(1) & 0xFF
+        if k == 27:
+            break
+    cv2.destroyAllWindows()
+    return im1, im2
 
 if __name__=="__main__":
+    
     # Image files location 
-    location = 'Documents\GitHub\Optic_Disk\Images\_OD'
-
+    location1 = 'Documents\GitHub\Optic_Disk\Images\_OD'
+    location2 = 'Documents\GitHub\Optic_Disk\Images_Processed\_OD'
     # Loop through all the images
+
     for i in range(1, 15):
-        
-        image = location + str(i) + '.jpeg'   # Filename
-        #image = 'Documents\GitHub\Optic_Disk\BottomHat.jpg'
-        img = cv2.imread(image,0)             # Read image
-        img = crop(img, i)                    # Crop the image
-        #img = cv2.imread('Documents\GitHub\Optic_Disk\OD.jpeg',0)
-        image = img
+
+        image1 = location1 + str(i) + '.jpeg'   # Filename
+        image2 = location2 + str(i) + '.jpg'    # Filename
+        img1 = cv2.imread(image1,0)             # Read image
+        img2 = cv2.imread(image2,0)             # Read image
+        img1 = crop(img1, i)                    # Crop the image
+        final = image = img = img1
+
         height, width = img.shape[0:2]
-        
-        image2 = crimmins(image)
-        equ = cv2.equalizeHist(image2)
+
+        equ1 = cv2.equalizeHist(image)
+        equ2 = cv2.equalizeHist(img2)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        cl1 = clahe.apply(image2)
-        equ2 = crimmins(equ)
-        cl2 = crimmins(cl1)
+        cl1 = clahe.apply(image)
+        cl2 = clahe.apply(img2)
+
+        _, bottomhat = removeBloodVessels(image,200,50)
+        #_, bottomhat = bottomhat_tb(image)
+        adaptive_tb(bottomhat)
+        adaptive_tb(equ1)
+        adaptive_tb(equ2)
+        adaptive_tb(cl1)
+        adaptive_tb(cl2)
+        #mask = threshold_tb(bottomhat, 70)
+
+        #path = 'Documents\GitHub\Optic_Disk\BottomHat.jpg'
+        #mask = cv2.imread(path,0)
+        #image1 = trackbar(equ,25)
+        #image = trackbar(clahe,140)
+
+        #path = 'Documents\GitHub\Optic_Disk\Images_Processed\_OD' + str(i) + '.jpg'
+        
+        #image2 = crimmins(image)
+        #cv2.imwrite(path, image2) 
+        #print('Image ' + str(i) + ' - done')
+        
+        #image = img
+        #equ = cv2.equalizeHist(image)
+        #equ = image - image2
+        
+        """
+        for i in range(height):
+            for j in range(width):
+                if (mask[i,j] != 0 and mask[i,j] != 255):
+                    #final[i,j] = mask[i,j]
+                    final[i,j] = 255 - final [i,j]
+        
+        plt.subplot(1,3,1),plt.imshow(img,cmap = 'gray')
+        plt.title('IMG'), plt.xticks([]), plt.yticks([])
+        #plt.subplot(1,3,2),plt.imshow(equ,cmap = 'gray')
+        #plt.title('EQU'), plt.xticks([]), plt.yticks([]) 
+        plt.subplot(1,3,3),plt.imshow(final,cmap = 'gray')
+        plt.title('Final'), plt.xticks([]), plt.yticks([])
+        plt.show()
+        """
+        #clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        #cl1 = clahe.apply(image2)
+        #equ2 = crimmins(equ)
+        #cl2 = crimmins(cl1)
         
         """
         crim = cl2
@@ -671,24 +760,9 @@ if __name__=="__main__":
         dst_bw = cv2.fastNlMeansDenoisingMulti(noisy, 2, 5, None, 4, 7, 35)
         """
         
-        removeBloodVessels(equ2,110,10)
-        removeBloodVessels(cl2,110,10)
-
-        plt.subplot(2,3,1),plt.imshow(image,cmap = 'gray')
-        plt.title('IMG'), plt.xticks([]), plt.yticks([])
-        plt.subplot(2,3,2),plt.imshow(equ,cmap = 'gray')
-        plt.title('EQU'), plt.xticks([]), plt.yticks([])   
-        plt.subplot(2,3,3),plt.imshow(cl1,cmap = 'gray')
-        plt.title('Cl1'), plt.xticks([]), plt.yticks([]) 
-        plt.subplot(2,3,4),plt.imshow(image2,cmap = 'gray')
-        plt.title('IMG'), plt.xticks([]), plt.yticks([])
-        plt.subplot(2,3,5),plt.imshow(equ2,cmap = 'gray')
-        plt.title('EQU'), plt.xticks([]), plt.yticks([])   
-        plt.subplot(2,3,6),plt.imshow(cl2,cmap = 'gray')
-        plt.title('Cl1'), plt.xticks([]), plt.yticks([])    
-        plt.show()
-        
-        #trackbar(image)
+        #removeBloodVessels(equ2,110,10)
+        #removeBloodVessels(equ2,110,10)
+        #removeBloodVessels(cl2,110,10)
 
         """
         image = crimmins(image)
@@ -696,15 +770,6 @@ if __name__=="__main__":
         #beta = -125
         #new_image1 = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
         #new_image1 = cv2.GaussianBlur(new_image1,(5,5),8)
-        alpha = 1.8
-        beta = -125
-        new_image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
-        new_image = cv2.GaussianBlur(new_image,(5,5),8)
-        #alpha = 5
-        #beta = -1000
-        #new_image3 = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
-        #new_image3 = cv2.GaussianBlur(new_image3,(5,5),8)
-        #new_image = cv2.blur(new_image,(5,5))
 
         kernel = np.ones((5,5),np.uint8)
 
@@ -721,9 +786,9 @@ if __name__=="__main__":
         sobelx = cv2.Sobel(new_image,cv2.CV_64F,1,0,ksize=5)
         sobely = cv2.Sobel(new_image,cv2.CV_64F,0,1,ksize=5)
         sobel = cv2.addWeighted(np.absolute(sobelx), 0.5, np.absolute(sobely), 0.5, 0)
-        """
+        
         image_filter = img
-        """
+        
         for a in range(height):
             for b in range(width):
                 val = new_image2[a,b] - gradient[a,b]
@@ -734,36 +799,9 @@ if __name__=="__main__":
                     image_filter[a,b] = 255
                 else:
                     image_filter[a,b] = val
-        """
-        """
-        plt.subplot(2,3,1),plt.imshow(image_filter,cmap = 'gray')
-        plt.title('Filter'), plt.xticks([]), plt.yticks([])
-        #plt.subplot(2,3,2),plt.imshow(new_image1,cmap = 'gray')
-        #plt.title('Contrast1'), plt.xticks([]), plt.yticks([])
-        plt.subplot(2,3,2),plt.imshow(new_image,cmap = 'gray')
-        plt.title('Contrast'), plt.xticks([]), plt.yticks([])
-        #plt.subplot(2,3,3),plt.imshow(new_image,cmap = 'gray')
-        #plt.title('Invert'), plt.xticks([]), plt.yticks([])
-        plt.subplot(2,3,4),plt.imshow(edge1,cmap = 'gray')
-        plt.title('Canny'), plt.xticks([]), plt.yticks([])
-        #plt.subplot(3,3,6),plt.imshow(edge2,cmap = 'gray')
-        #plt.title('Canny-Close'), plt.xticks([]), plt.yticks([])
-        #plt.subplot(3,3,5),plt.imshow(opening,cmap = 'gray')
-        #plt.title('Opening'), plt.xticks([]), plt.yticks([])
-        #plt.subplot(3,3,6),plt.imshow(closing,cmap = 'gray')
-        #plt.title('Closing'), plt.xticks([]), plt.yticks([])
-        plt.subplot(2,3,5),plt.imshow(gradient,cmap = 'gray')
-        plt.title('Gradient'), plt.xticks([]), plt.yticks([])    
-        plt.subplot(2,3,6),plt.imshow(sobel,cmap = 'gray')
-        plt.title('Sobel'), plt.xticks([]), plt.yticks([])    
-        plt.show()
-
-        segment(image)
-        segment(new_image)
-        segment(image_filter)
+        
         segment(gradient)
-        """
-        """
+        
         img1 = new_image1
         img2 = new_image2
         img3 = new_image3
@@ -774,9 +812,6 @@ if __name__=="__main__":
         #for a in range(10,250,10):
             #for b in range(10,250,10):
                 #removeBloodVessels(img2,a,b,i)
-                #removeBloodVessels(img3,a,b,i)
-                #removeBloodVessels(img4,a,b,i)
-                #removeBloodVessels(img5,a,b,i)
         
         #v = 'img_'+str(i)
         #cv2.imshow(v,img)
@@ -784,15 +819,6 @@ if __name__=="__main__":
         #filterimage(img)
         
         segment(img1)
-        segment(img2)
-        segment(img4)
         """
-        #segment(edge1)
-        #segment(edge2)
-        # cv2.imshow('canny',edge)
-        # Wait for keystroke
-        #FindBloodVesselPoint2(img)
-        
         cv2.waitKey(0)
-    
     cv2.destroyAllWindows
