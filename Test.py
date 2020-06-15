@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 
-
 def removeBloodVessels(img):
 
     globalMin = 0 

@@ -1,0 +1,532 @@
+import cv2
+import time
+import math
+import random
+import argparse
+import numpy as np
+import numpy.matlib as npmatlib
+import matplotlib.pyplot as plt
+from PIL import Image, ImageFilter
+import statistics as stat
+from skimage import io
+from skimage import data
+from skimage import color
+from skimage.color import rgb2gray
+from skimage.filters import gaussian
+from skimage.measure import regionprops
+from skimage.segmentation import active_contour
+from skimage.filters import meijering, sato, frangi, hessian
+from scipy.ndimage.filters import uniform_filter
+from scipy.ndimage.measurements import variance
+
+def auto_canny(image, sigma = 0.7):
+    # compute the median of the single channel pixel intensities
+    v = np.median(image)
+    # apply automatic Canny edge detection using the computed median
+    lower = int(max(0, (1.0 - sigma) * v))
+    upper = int(min(255, (1.0 + sigma) * v)/2)
+    #print(lower)
+    #print(upper)
+    edged = cv2.Canny(image, lower, upper)
+    # return the edged image
+    return edged
+
+def nothing(x):
+    pass
+
+def crimmins(data):
+    new_image = data.copy()
+    nrow = len(data)
+    ncol = len(data[0])
+    
+    # Dark pixel adjustment
+    
+    # First Step
+    # N-S
+    for i in range(1, nrow):
+        for j in range(ncol):
+            if data[i-1,j] >= (data[i,j] + 2):
+                new_image[i,j] += 1
+    data = new_image
+    # E-W
+    for i in range(nrow):
+        for j in range(ncol-1):
+            if data[i,j+1] >= (data[i,j] + 2):
+                new_image[i,j] += 1
+    data = new_image
+    # NW-SE
+    for i in range(1, nrow):
+        for j in range(1, ncol):
+            if data[i-1,j-1] >= (data[i,j] + 2):
+                new_image[i,j] += 1
+    data = new_image
+    #NE-SW
+    for i in range(1, nrow):
+        for j in range(ncol-1):
+            if data[i-1,j+1] >= (data[i,j] + 2):
+                new_image[i,j] += 1
+    data = new_image
+    # Second Step
+    # N-S
+    for i in range(1, nrow-1):
+        for j in range(ncol):
+            if (data[i-1,j] > data[i,j]) and (data[i,j] <= data[i+1,j]):
+                new_image[i,j] += 1
+    data = new_image
+    # E-W
+    for i in range(nrow):
+        for j in range(1, ncol-1):
+            if (data[i,j+1] > data[i,j]) and (data[i,j] <= data[i,j-1]):
+                new_image[i,j] += 1
+    data = new_image
+    # NW-SE
+    for i in range(1, nrow-1):
+        for j in range(1, ncol-1):
+            if (data[i-1,j-1] > data[i,j]) and (data[i,j] <= data[i+1,j+1]):
+                new_image[i,j] += 1
+    data = new_image
+    # NE-SW
+    for i in range(1, nrow-1):
+        for j in range(1, ncol-1):
+            if (data[i-1,j+1] > data[i,j]) and (data[i,j] <= data[i+1,j-1]):
+                new_image[i,j] += 1
+    data = new_image
+    #Third Step
+    # N-S
+    for i in range(1, nrow-1):
+        for j in range(ncol):
+            if (data[i+1,j] > data[i,j]) and (data[i,j] <= data[i-1,j]):
+                new_image[i,j] += 1
+    data = new_image
+    # E-W
+    for i in range(nrow):
+        for j in range(1, ncol-1):
+            if (data[i,j-1] > data[i,j]) and (data[i,j] <= data[i,j+1]):
+                new_image[i,j] += 1
+    data = new_image
+    # NW-SE
+    for i in range(1, nrow-1):
+        for j in range(1, ncol-1):
+            if (data[i+1,j+1] > data[i,j]) and (data[i,j] <= data[i-1,j-1]):
+                new_image[i,j] += 1
+    data = new_image
+    # NE-SW
+    for i in range(1, nrow-1):
+        for j in range(1, ncol-1):
+            if (data[i+1,j-1] > data[i,j]) and (data[i,j] <= data[i-1,j+1]):
+                new_image[i,j] += 1
+    data = new_image
+    # Fourth Step
+    # N-S
+    for i in range(nrow-1):
+        for j in range(ncol):
+            if (data[i+1,j] >= (data[i,j]+2)):
+                new_image[i,j] += 1
+    data = new_image
+    # E-W
+    for i in range(nrow):
+        for j in range(1,ncol):
+            if (data[i,j-1] >= (data[i,j]+2)):
+                new_image[i,j] += 1
+    data = new_image
+    # NW-SE
+    for i in range(nrow-1):
+        for j in range(ncol-1):
+            if (data[i+1,j+1] >= (data[i,j]+2)):
+                new_image[i,j] += 1
+    data = new_image
+    # NE-SW
+    for i in range(nrow-1):
+        for j in range(1,ncol):
+            if (data[i+1,j-1] >= (data[i,j]+2)):
+                new_image[i,j] += 1
+    data = new_image
+    
+    # Light pixel adjustment
+    
+    # First Step
+    # N-S
+    for i in range(1,nrow):
+        for j in range(ncol):
+            if (data[i-1,j] <= (data[i,j]-2)):
+                new_image[i,j] -= 1
+    data = new_image
+    # E-W
+    for i in range(nrow):
+        for j in range(ncol-1):
+            if (data[i,j+1] <= (data[i,j]-2)):
+                new_image[i,j] -= 1
+    data = new_image
+    # NW-SE
+    for i in range(1,nrow):
+        for j in range(1,ncol):
+            if (data[i-1,j-1] <= (data[i,j]-2)):
+                new_image[i,j] -= 1
+    data = new_image
+    # NE-SW
+    for i in range(1,nrow):
+        for j in range(ncol-1):
+            if (data[i-1,j+1] <= (data[i,j]-2)):
+                new_image[i,j] -= 1
+    data = new_image
+    # Second Step
+    # N-S
+    for i in range(1,nrow-1):
+        for j in range(ncol):
+            if (data[i-1,j] < data[i,j]) and (data[i,j] >= data[i+1,j]):
+                new_image[i,j] -= 1
+    data = new_image
+    # E-W
+    for i in range(nrow):
+        for j in range(1, ncol-1):
+            if (data[i,j+1] < data[i,j]) and (data[i,j] >= data[i,j-1]):
+                new_image[i,j] -= 1
+    data = new_image
+    # NW-SE
+    for i in range(1,nrow-1):
+        for j in range(1,ncol-1):
+            if (data[i-1,j-1] < data[i,j]) and (data[i,j] >= data[i+1,j+1]):
+                new_image[i,j] -= 1
+    data = new_image
+    # NE-SW
+    for i in range(1,nrow-1):
+        for j in range(1,ncol-1):
+            if (data[i-1,j+1] < data[i,j]) and (data[i,j] >= data[i+1,j-1]):
+                new_image[i,j] -= 1
+    data = new_image
+    # Third Step
+    # N-S
+    for i in range(1,nrow-1):
+        for j in range(ncol):
+            if (data[i+1,j] < data[i,j]) and (data[i,j] >= data[i-1,j]):
+                new_image[i,j] -= 1
+    data = new_image
+    # E-W
+    for i in range(nrow):
+        for j in range(1,ncol-1):
+            if (data[i,j-1] < data[i,j]) and (data[i,j] >= data[i,j+1]):
+                new_image[i,j] -= 1
+    data = new_image
+    # NW-SE
+    for i in range(1,nrow-1):
+        for j in range(1,ncol-1):
+            if (data[i+1,j+1] < data[i,j]) and (data[i,j] >= data[i-1,j-1]):
+                new_image[i,j] -= 1
+    data = new_image
+    # NE-SW
+    for i in range(1,nrow-1):
+        for j in range(1,ncol-1):
+            if (data[i+1,j-1] < data[i,j]) and (data[i,j] >= data[i-1,j+1]):
+                new_image[i,j] -= 1
+    data = new_image
+    # Fourth Step
+    # N-S
+    for i in range(nrow-1):
+        for j in range(ncol):
+            if (data[i+1,j] <= (data[i,j]-2)):
+                new_image[i,j] -= 1
+    data = new_image
+    # E-W
+    for i in range(nrow):
+        for j in range(1,ncol):
+            if (data[i,j-1] <= (data[i,j]-2)):
+                new_image[i,j] -= 1
+    data = new_image
+    # NW-SE
+    for i in range(nrow-1):
+        for j in range(ncol-1):
+            if (data[i+1,j+1] <= (data[i,j]-2)):
+                new_image[i,j] -= 1
+    data = new_image
+    # NE-SW
+    for i in range(nrow-1):
+        for j in range(1,ncol):
+            if (data[i+1,j-1] <= (data[i,j]-2)):
+                new_image[i,j] -= 1
+    data = new_image
+    return new_image.copy()
+
+def crop(img, i):
+    # Returns dimensions of image
+    height, width = img.shape[0:2]
+    # Top and Bottom range
+    startrow = int(height*.12)
+    endrow = int(height*.88)
+    startcol = int(width*.05)
+    endcol = int(width*0.95)
+    img = img[startrow:endrow, startcol:endcol]
+    height, width = img.shape[0:2]
+    image = img[0:height, startcol:endcol]
+    height, width = img.shape[0:2]
+    image = image[20:520, 20:520]
+    return image
+
+def conservative_smoothing_gray(data, filter_size):
+    temp = []
+    indexer = filter_size // 2
+    new_image = data.copy()
+    nrow, ncol = data.shape[0:2]
+    for i in range(nrow):
+        for j in range(ncol):
+            for k in range(i-indexer, i+indexer+1):
+                for m in range(j-indexer, j+indexer+1):
+                    if (k > -1) and (k < nrow):
+                        if (m > -1) and (m < ncol):
+                            temp.append(data[k,m])
+            
+            temp.remove(data[i,j])
+            max_value = max(temp)
+            min_value = min(temp)
+            if data[i,j] > max_value:
+                new_image[i,j] = max_value
+            elif data[i,j] < min_value:
+                new_image[i,j] = min_value
+            temp =[]
+    return new_image.copy()
+
+def write_image(path, img):
+    # img = img*(2**16-1)
+    # img = img.astype(np.uint16)
+    img = img.astype(np.uint8)
+    cv2.imwrite(path,img)
+    # Convert the scale (values range) of the image
+    img = cv2.convertScaleAbs(img, alpha=(255.0))
+    # Save file
+    plt.savefig(path, bbox_inches='tight')#, img, format = 'png')
+
+def lee_filter(img, size):
+    img_mean = uniform_filter(img, (size, size))
+    img_sqr_mean = uniform_filter(img**2, (size, size))
+    img_variance = img_sqr_mean - img_mean**2
+    overall_variance = variance(img)
+    img_weights = img_variance / (img_variance + overall_variance)
+    img_output = img_mean + img_weights * (img - img_mean)
+    return img_output
+
+def segment(img, blur=0.01, alpha=0.1, beta=0.1, gamma=0.001):
+    height, width = img.shape[0:2]
+    # Initial contour
+    s = np.linspace(0, 2*np.pi, 400)
+    #r = int(height/2*np.ones(len(s)) + height*np.sin(s)/2)
+    #c = int(width/2*np.ones(len(s)) + width*np.cos(s)/2)
+    row = int(height/2)
+    column = int(width/2)
+    r = row + (row-10)*np.sin(s)
+    c = column + (column-10)*np.cos(s)
+    init = np.array([r, c]).T
+
+    # Parameters for Active Contour
+    blur = 0.01
+    alpha = 0.1
+    beta = 0.1
+    gamma = 0.001
+    w_line = -5
+    w_edge = 0
+
+    # Active contour
+    snake = active_contour(gaussian(img, blur), init, alpha, beta, gamma, coordinates='rc')
+    #snake = active_contour(gaussian(img, 1), init, alpha, beta, w_line, w_edge, gamma, coordinates='rc')
+    # boundary_condition='fixed' blur = 1, alpha = 0.1, beta=1, w_line = -5, w_edge=0, gamma = 0.1
+    # Display the image with contour
+    fig, ax = plt.subplots(figsize=(7, 7))
+    ax.imshow(img, cmap=plt.cm.gray)
+    ax.plot(init[:, 1], init[:, 0], '--r', lw=3)
+    ax.plot(snake[:, 1], snake[:, 0], '-b', lw=3)
+    ax.set_xticks([]), ax.set_yticks([])
+    ax.axis([0, img.shape[1], img.shape[0], 0])
+    plt.show()
+
+def filterimage(img):
+    #cv2.imshow('i',img)
+    #croppedImage = img[startRow:endRow, startCol:endCol]
+     
+    kernel = np.ones((5,5),np.uint8)
+
+    dilation = cv2.dilate(img,kernel,iterations = 1)
+    blur = dilation
+    #blur = cv2.GaussianBlur(dilation,(5,5),0)
+    #blur = cv2.blur(dilation,(5,5))
+    #plt.imshow(blur,cmap = 'gray')
+    #plt.show()
+    #dilation = cv2.dilate(blur,kernel,iterations = 1)
+    #blur = cv2.GaussianBlur(dilation,(5,5),0)
+    #blur = cv2.GaussianBlur(im,(5,5),0)
+
+    erosion = cv2.erode(blur,kernel,iterations = 1)
+
+    #blur = cv2.blur(erosion,(10,10),0)
+    plt.imshow(blur,cmap = 'gray')
+    plt.show()
+
+    opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+    closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    gradient = cv2.morphologyEx(blur, cv2.MORPH_GRADIENT, kernel)
+    dil = cv2.erode(gradient,kernel,iterations = 1) 
+
+    plt.subplot(2,3,1),plt.imshow(img,cmap = 'gray')
+    plt.title('Original'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,3,2),plt.imshow(erosion,cmap = 'gray')
+    plt.title('Erosion'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,3,3),plt.imshow(dilation,cmap = 'gray')
+    plt.title('Dilation'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,3,4),plt.imshow(opening,cmap = 'gray')
+    plt.title('Opening'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,3,5),plt.imshow(dil,cmap = 'gray')
+    plt.title('Dil'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,3,6),plt.imshow(gradient,cmap = 'gray')
+    plt.title('Gradient'), plt.xticks([]), plt.yticks([])
+    plt.show()
+
+    laplacian = cv2.Laplacian(img,cv2.CV_64F)
+    sobelx = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
+    sobely = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
+    sobel = cv2.addWeighted(np.absolute(sobelx), 0.5, np.absolute(sobely), 0.5, 0)
+    #sobel = cv2.Sobel(img,cv2.CV_64F,1,1,ksize=5)
+    sobel = cv2.erode(sobel,kernel,iterations = 1)
+
+    plt.subplot(2,2,1),plt.imshow(sobel,cmap = 'gray')
+    plt.title('Sobel'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,2,2),plt.imshow(laplacian,cmap = 'gray')
+    plt.title('Laplacian'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,2,3),plt.imshow(sobelx,cmap = 'gray')
+    plt.title('Sobel X'), plt.xticks([]), plt.yticks([])
+    plt.subplot(2,2,4),plt.imshow(sobely,cmap = 'gray')
+    plt.title('Sobel Y'), plt.xticks([]), plt.yticks([])
+
+    plt.show()
+
+def threshold_tb(image, threshold = 150, th_type = 3):
+    alpha = 180
+    beta = 125
+    s = 0
+    cv2.namedWindow('Contrast')
+    # create trackbars for color change
+    cv2.createTrackbar('alpha','Contrast', alpha, 255, nothing)
+    cv2.createTrackbar('beta','Contrast', beta, 255, nothing)
+    cv2.createTrackbar('Threshold','Contrast', threshold, 255, nothing)
+    cv2.createTrackbar('Type','Contrast', th_type, 4, nothing)
+    # create switch for ON/OFF functionality
+    cv2.createTrackbar('Switch', 'Contrast', s, 1, nothing)
+    # get current positions of four trackbars
+    while(s == 0):
+        alpha = cv2.getTrackbarPos('alpha','Contrast')
+        beta = cv2.getTrackbarPos('beta','Contrast')
+        threshold = cv2.getTrackbarPos('Threshold','Contrast')
+        th_type = cv2.getTrackbarPos('Type','Contrast')
+        s = cv2.getTrackbarPos('Switch','Contrast')
+        """
+        #0: Binary
+        #1: Binary Inverted
+        #2: Threshold Truncated
+        #3: Threshold to Zero
+        #4: Threshold to Zero Inverted
+        """
+        _, dst = cv2.threshold(image, threshold, 255, th_type)
+        new_image = dst
+        cv2.imshow('Threshold', dst)
+        k = cv2.waitKey(1) & 0xFF
+        if k == 27:
+            break
+    
+    cv2.destroyAllWindows()
+    return dst
+
+def adaptive_tb(image, mth1=11, mth2=2, gth1=11, gth2=2):
+    s = 0
+    img = cv2.medianBlur(image,5)
+    cv2.namedWindow('Contrast')
+    # create trackbars for color change
+    cv2.createTrackbar('Mean Threshold 1', 'Contrast', mth1, 255, nothing)
+    cv2.createTrackbar('Mean Threshold 2', 'Contrast', mth2, 255, nothing)
+    cv2.createTrackbar('Gaussian Threshold 1', 'Contrast', gth1, 255, nothing)
+    cv2.createTrackbar('Gaussian Threshold 2', 'Contrast', gth2, 255, nothing)
+    # create switch for ON/OFF functionality
+    cv2.createTrackbar('Switch', 'Contrast', s, 1, nothing)
+    # get current positions of four trackbars
+    while(s == 0):
+        mth1 = cv2.getTrackbarPos('Mean Threshold 1','Contrast')
+        mth2 = cv2.getTrackbarPos('Mean Threshold 2','Contrast')
+        gth1 = cv2.getTrackbarPos('Gaussian Threshold 1','Contrast')
+        gth2 = cv2.getTrackbarPos('Gaussian Threshold 2','Contrast')
+        s = cv2.getTrackbarPos('Switch','Contrast')
+        #_, dst = cv2.threshold(image, threshold, 255, th_type)
+        im1 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+        im2 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        cv2.imshow('Image', image)
+        cv2.imshow('AdaptiveMean', im1)
+        cv2.imshow('AdaptiveGaussian', im2)
+        k = cv2.waitKey(1) & 0xFF
+        if k == 27:
+            break
+    cv2.destroyAllWindows()
+    return im1, im2
+
+if __name__=="__main__":
+    
+    # Image files location 
+    location1 = 'Documents\GitHub\Optic_Disk\Images_Processed\_CS'
+    #location2 = 'Documents\GitHub\Optic_Disk\Images_Processed\_OD'
+    # Loop through all the images
+
+    for i in range(1, 29):
+
+        image1 = location1 + str(i) + '.jpeg'    # Filename
+        #image2 = location2 + str(i) + '.jpg'    # Filename
+        img1 = cv2.imread(image1,0)              # Read image
+        #img2 = cv2.imread(image2,0)             # Read image
+        img1 = cv2.medianBlur(img1,25)
+        img1 = cv2.GaussianBlur(img1,(25,25),0)
+        img1 = cv2.blur(img1,(25,25))
+        threshold_tb(img1)
+        image = img = img1
+        
+        height, width = img.shape[0:2]
+        
+        #threshold_tb(image)
+
+        #path = 'Documents\GitHub\Optic_Dsk\Images_Processed\_CS' + str(i) + '.jpeg'
+        
+        #image2 = crimmins(image)
+        #cv2.imwrite(path, image2) 
+        #print('Image ' + str(i) + ' - done')
+        
+        #image = img
+        #equ = cv2.equalizeHist(image)
+        #equ = image - image2
+        
+        """
+        for i in range(height):
+            for j in range(width):
+                if (mask[i,j] != 0 and mask[i,j] != 255):
+                    #final[i,j] = mask[i,j]
+                    final[i,j] = 255 - final [i,j]
+        
+        plt.subplot(1,3,1),plt.imshow(img,cmap = 'gray')
+        plt.title('IMG'), plt.xticks([]), plt.yticks([])
+        #plt.subplot(1,3,2),plt.imshow(equ,cmap = 'gray')
+        #plt.title('EQU'), plt.xticks([]), plt.yticks([]) 
+        plt.subplot(1,3,3),plt.imshow(final,cmap = 'gray')
+        plt.title('Final'), plt.xticks([]), plt.yticks([])
+        plt.show()
+        """
+        
+        """
+        crim = cl2
+        unsharp = Image.fromarray(crim.astype('uint8'))
+        unsharp_class = unsharp.filter(ImageFilter.UnsharpMask(radius=2, percent=150))
+        unsharp = np.array(unsharp_class)
+        lee = lee_filter(img,10)
+        conservative = conservative_smoothing_gray(unsharp,9)
+        contrast = cv2.convertScaleAbs(conservative,alpha=1.8,beta=-120)
+        
+        #dst_col = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = np.float64(gray)
+        # Convert back to uint8
+        noisy = np.uint8(np.clip(img,0,255))
+
+        dst_bw = cv2.fastNlMeansDenoisingMulti(noisy, 2, 5, None, 4, 7, 35)
+        """
+    
+        cv2.waitKey(0)
+    cv2.destroyAllWindows

@@ -820,5 +820,6 @@ if __name__=="__main__":
         
         segment(img1)
         """
+        
         cv2.waitKey(0)
     cv2.destroyAllWindows
