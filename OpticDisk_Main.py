@@ -585,7 +585,7 @@ def removeBloodVessels(img,th_0,th_1):
 
     return bottomHat0, bottomHat1
     
-def threshold_tb(image, threshold = 70, th_type = 3):
+def threshold_tb(image, threshold = 50, th_type = 3):
     alpha = 180
     beta = 125
     s = 0
@@ -612,13 +612,10 @@ def threshold_tb(image, threshold = 70, th_type = 3):
         #4: Threshold to Zero Inverted
         """
         _, dst = cv2.threshold(image, threshold, 255, th_type)
-        new_image = dst
         cv2.imshow('Threshold', dst)
         k = cv2.waitKey(1) & 0xFF
         if k == 27:
             break
-    cv2.imshow('Threshold', new_image)
-    cv2.waitKey(0)
     cv2.destroyAllWindows()
     return dst
 
@@ -671,6 +668,8 @@ def adaptive_tb(image, mth1=11, mth2=2, gth1=11, gth2=2):
         k = cv2.waitKey(1) & 0xFF
         if k == 27:
             break
+    im1 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+    im2 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
     cv2.destroyAllWindows()
     return im1, im2
 
@@ -697,14 +696,41 @@ if __name__=="__main__":
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         cl1 = clahe.apply(image)
         cl2 = clahe.apply(img2)
-
         _, bottomhat = removeBloodVessels(image,200,50)
+        bottomhat = threshold_tb(bottomhat)
+        #count = np.zeros(height, 10)
+        index = np.zeros([height,10])
+        """
+        for i in range(height):
+            k = 0
+            for j in range(width):
+                if bottomhat[i,j] != 0 and bottomhat[i,j] != 255:
+                    index[i,k] = j
+                    while (bottomhat[i,j] != 0):
+                        count[i,k] = count[i,k] + 1
+                        j = j+1
+                    k = k+1
+            for j in range(k):
+                src = index[i,j] - count[i,j]
+                tar = index[i,j]
+                final[i,tar] = final[i,src] 
+                while(j != 0):
+                    j
+        """
+        for i in range(height):
+            for j in range(width):
+                if bottomhat[i,j] == 0:
+                    prev = final[i,j]
+                elif bottomhat[i,j] == 255:
+                    pass
+                else:
+                    final[i,j] = prev
+        final = cv2.GaussianBlur(final,(11,11),0)
+        image = img
+        cv2.imshow('bottomhat', final)
+        
+        cv2.waitKey(0)
         #_, bottomhat = bottomhat_tb(image)
-        adaptive_tb(bottomhat)
-        adaptive_tb(equ1)
-        adaptive_tb(equ2)
-        adaptive_tb(cl1)
-        adaptive_tb(cl2)
         #mask = threshold_tb(bottomhat, 70)
 
         #path = 'Documents\GitHub\Optic_Disk\BottomHat.jpg'
