@@ -680,56 +680,63 @@ if __name__=="__main__":
     location2 = 'Documents\GitHub\Optic_Disk\Images_Processed\_OD'
     # Loop through all the images
 
-    for i in range(1, 15):
+    for index in range(1, 15):
 
-        image1 = location1 + str(i) + '.jpeg'   # Filename
-        image2 = location2 + str(i) + '.jpg'    # Filename
+        image1 = location1 + str(index) + '.jpeg'   # Filename
+        image2 = location2 + str(index) + '.jpg'    # Filename
         img1 = cv2.imread(image1,0)             # Read image
         img2 = cv2.imread(image2,0)             # Read image
-        img1 = crop(img1, i)                    # Crop the image
-        final = image = img = img1
+        img1 = crop(img1, index)                    # Crop the image
+        img = img1.copy()
+        image = img.copy()
+        final = image.copy()
 
         height, width = img.shape[0:2]
 
-        equ1 = cv2.equalizeHist(image)
-        equ2 = cv2.equalizeHist(img2)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        cl1 = clahe.apply(image)
-        cl2 = clahe.apply(img2)
         _, bottomhat = removeBloodVessels(image,200,50)
         bottomhat = threshold_tb(bottomhat)
-        #count = np.zeros(height, 10)
-        index = np.zeros([height,10])
-        """
-        for i in range(height):
-            k = 0
-            for j in range(width):
-                if bottomhat[i,j] != 0 and bottomhat[i,j] != 255:
-                    index[i,k] = j
-                    while (bottomhat[i,j] != 0):
-                        count[i,k] = count[i,k] + 1
-                        j = j+1
-                    k = k+1
-            for j in range(k):
-                src = index[i,j] - count[i,j]
-                tar = index[i,j]
-                final[i,tar] = final[i,src] 
-                while(j != 0):
-                    j
-        """
+       
+        alpha = 2
+        beta = -125
+        #image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+        final = image.copy()
+        prev = np.zeros(10)
+
         for i in range(height):
             for j in range(width):
                 if bottomhat[i,j] == 0:
-                    prev = final[i,j]
+                    for a in range(10):
+                        prev[a] = final[i,j-a-1]
+                    a = 1
                 elif bottomhat[i,j] == 255:
                     pass
                 else:
-                    final[i,j] = prev
-        final = cv2.GaussianBlur(final,(11,11),0)
-        image = img
-        cv2.imshow('bottomhat', final)
+                    if a == 9:
+                        a = 1
+                    final[i,j] = prev[a]
+                    a=a+1
+        #final = cv2.GaussianBlur(final,(5,5),0)
+        #final = cv2.medianBlur(final,3)
+        final = cv2.blur(final,(5,5))
+        cv2.imshow('original', image)
+        cv2.imshow('final', final)
+        path = 'Documents\GitHub\Optic_Disk\Images_Processed\_VR' + str(index) + '.jpeg'
+        cv2.imwrite(path, final)
+
+        """
+        equ = cv2.equalizeHist(final)
+        clahe1 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        clahe2 = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(3,3))
+        cl1 = clahe1.apply(final)
+        cl2 = clahe2.apply(final)
         
+        cv2.imshow('CLAHE1', cl1)
+        cv2.imshow('CLAHE2', cl2)
+        """
         cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        segment(final)
         #_, bottomhat = bottomhat_tb(image)
         #mask = threshold_tb(bottomhat, 70)
 
