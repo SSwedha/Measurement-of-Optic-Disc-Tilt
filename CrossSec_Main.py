@@ -34,218 +34,6 @@ def auto_canny(image, sigma = 0.7):
 def nothing(x):
     pass
 
-def crimmins(data):
-    new_image = data.copy()
-    nrow = len(data)
-    ncol = len(data[0])
-    
-    # Dark pixel adjustment
-    
-    # First Step
-    # N-S
-    for i in range(1, nrow):
-        for j in range(ncol):
-            if data[i-1,j] >= (data[i,j] + 2):
-                new_image[i,j] += 1
-    data = new_image
-    # E-W
-    for i in range(nrow):
-        for j in range(ncol-1):
-            if data[i,j+1] >= (data[i,j] + 2):
-                new_image[i,j] += 1
-    data = new_image
-    # NW-SE
-    for i in range(1, nrow):
-        for j in range(1, ncol):
-            if data[i-1,j-1] >= (data[i,j] + 2):
-                new_image[i,j] += 1
-    data = new_image
-    #NE-SW
-    for i in range(1, nrow):
-        for j in range(ncol-1):
-            if data[i-1,j+1] >= (data[i,j] + 2):
-                new_image[i,j] += 1
-    data = new_image
-    # Second Step
-    # N-S
-    for i in range(1, nrow-1):
-        for j in range(ncol):
-            if (data[i-1,j] > data[i,j]) and (data[i,j] <= data[i+1,j]):
-                new_image[i,j] += 1
-    data = new_image
-    # E-W
-    for i in range(nrow):
-        for j in range(1, ncol-1):
-            if (data[i,j+1] > data[i,j]) and (data[i,j] <= data[i,j-1]):
-                new_image[i,j] += 1
-    data = new_image
-    # NW-SE
-    for i in range(1, nrow-1):
-        for j in range(1, ncol-1):
-            if (data[i-1,j-1] > data[i,j]) and (data[i,j] <= data[i+1,j+1]):
-                new_image[i,j] += 1
-    data = new_image
-    # NE-SW
-    for i in range(1, nrow-1):
-        for j in range(1, ncol-1):
-            if (data[i-1,j+1] > data[i,j]) and (data[i,j] <= data[i+1,j-1]):
-                new_image[i,j] += 1
-    data = new_image
-    #Third Step
-    # N-S
-    for i in range(1, nrow-1):
-        for j in range(ncol):
-            if (data[i+1,j] > data[i,j]) and (data[i,j] <= data[i-1,j]):
-                new_image[i,j] += 1
-    data = new_image
-    # E-W
-    for i in range(nrow):
-        for j in range(1, ncol-1):
-            if (data[i,j-1] > data[i,j]) and (data[i,j] <= data[i,j+1]):
-                new_image[i,j] += 1
-    data = new_image
-    # NW-SE
-    for i in range(1, nrow-1):
-        for j in range(1, ncol-1):
-            if (data[i+1,j+1] > data[i,j]) and (data[i,j] <= data[i-1,j-1]):
-                new_image[i,j] += 1
-    data = new_image
-    # NE-SW
-    for i in range(1, nrow-1):
-        for j in range(1, ncol-1):
-            if (data[i+1,j-1] > data[i,j]) and (data[i,j] <= data[i-1,j+1]):
-                new_image[i,j] += 1
-    data = new_image
-    # Fourth Step
-    # N-S
-    for i in range(nrow-1):
-        for j in range(ncol):
-            if (data[i+1,j] >= (data[i,j]+2)):
-                new_image[i,j] += 1
-    data = new_image
-    # E-W
-    for i in range(nrow):
-        for j in range(1,ncol):
-            if (data[i,j-1] >= (data[i,j]+2)):
-                new_image[i,j] += 1
-    data = new_image
-    # NW-SE
-    for i in range(nrow-1):
-        for j in range(ncol-1):
-            if (data[i+1,j+1] >= (data[i,j]+2)):
-                new_image[i,j] += 1
-    data = new_image
-    # NE-SW
-    for i in range(nrow-1):
-        for j in range(1,ncol):
-            if (data[i+1,j-1] >= (data[i,j]+2)):
-                new_image[i,j] += 1
-    data = new_image
-    
-    # Light pixel adjustment
-    
-    # First Step
-    # N-S
-    for i in range(1,nrow):
-        for j in range(ncol):
-            if (data[i-1,j] <= (data[i,j]-2)):
-                new_image[i,j] -= 1
-    data = new_image
-    # E-W
-    for i in range(nrow):
-        for j in range(ncol-1):
-            if (data[i,j+1] <= (data[i,j]-2)):
-                new_image[i,j] -= 1
-    data = new_image
-    # NW-SE
-    for i in range(1,nrow):
-        for j in range(1,ncol):
-            if (data[i-1,j-1] <= (data[i,j]-2)):
-                new_image[i,j] -= 1
-    data = new_image
-    # NE-SW
-    for i in range(1,nrow):
-        for j in range(ncol-1):
-            if (data[i-1,j+1] <= (data[i,j]-2)):
-                new_image[i,j] -= 1
-    data = new_image
-    # Second Step
-    # N-S
-    for i in range(1,nrow-1):
-        for j in range(ncol):
-            if (data[i-1,j] < data[i,j]) and (data[i,j] >= data[i+1,j]):
-                new_image[i,j] -= 1
-    data = new_image
-    # E-W
-    for i in range(nrow):
-        for j in range(1, ncol-1):
-            if (data[i,j+1] < data[i,j]) and (data[i,j] >= data[i,j-1]):
-                new_image[i,j] -= 1
-    data = new_image
-    # NW-SE
-    for i in range(1,nrow-1):
-        for j in range(1,ncol-1):
-            if (data[i-1,j-1] < data[i,j]) and (data[i,j] >= data[i+1,j+1]):
-                new_image[i,j] -= 1
-    data = new_image
-    # NE-SW
-    for i in range(1,nrow-1):
-        for j in range(1,ncol-1):
-            if (data[i-1,j+1] < data[i,j]) and (data[i,j] >= data[i+1,j-1]):
-                new_image[i,j] -= 1
-    data = new_image
-    # Third Step
-    # N-S
-    for i in range(1,nrow-1):
-        for j in range(ncol):
-            if (data[i+1,j] < data[i,j]) and (data[i,j] >= data[i-1,j]):
-                new_image[i,j] -= 1
-    data = new_image
-    # E-W
-    for i in range(nrow):
-        for j in range(1,ncol-1):
-            if (data[i,j-1] < data[i,j]) and (data[i,j] >= data[i,j+1]):
-                new_image[i,j] -= 1
-    data = new_image
-    # NW-SE
-    for i in range(1,nrow-1):
-        for j in range(1,ncol-1):
-            if (data[i+1,j+1] < data[i,j]) and (data[i,j] >= data[i-1,j-1]):
-                new_image[i,j] -= 1
-    data = new_image
-    # NE-SW
-    for i in range(1,nrow-1):
-        for j in range(1,ncol-1):
-            if (data[i+1,j-1] < data[i,j]) and (data[i,j] >= data[i-1,j+1]):
-                new_image[i,j] -= 1
-    data = new_image
-    # Fourth Step
-    # N-S
-    for i in range(nrow-1):
-        for j in range(ncol):
-            if (data[i+1,j] <= (data[i,j]-2)):
-                new_image[i,j] -= 1
-    data = new_image
-    # E-W
-    for i in range(nrow):
-        for j in range(1,ncol):
-            if (data[i,j-1] <= (data[i,j]-2)):
-                new_image[i,j] -= 1
-    data = new_image
-    # NW-SE
-    for i in range(nrow-1):
-        for j in range(ncol-1):
-            if (data[i+1,j+1] <= (data[i,j]-2)):
-                new_image[i,j] -= 1
-    data = new_image
-    # NE-SW
-    for i in range(nrow-1):
-        for j in range(1,ncol):
-            if (data[i+1,j-1] <= (data[i,j]-2)):
-                new_image[i,j] -= 1
-    data = new_image
-    return new_image.copy()
-
 def crop(img, i):
     # Returns dimensions of image
     height, width = img.shape[0:2]
@@ -260,29 +48,6 @@ def crop(img, i):
     height, width = img.shape[0:2]
     image = image[20:520, 20:520]
     return image
-
-def conservative_smoothing_gray(data, filter_size):
-    temp = []
-    indexer = filter_size // 2
-    new_image = data.copy()
-    nrow, ncol = data.shape[0:2]
-    for i in range(nrow):
-        for j in range(ncol):
-            for k in range(i-indexer, i+indexer+1):
-                for m in range(j-indexer, j+indexer+1):
-                    if (k > -1) and (k < nrow):
-                        if (m > -1) and (m < ncol):
-                            temp.append(data[k,m])
-            
-            temp.remove(data[i,j])
-            max_value = max(temp)
-            min_value = min(temp)
-            if data[i,j] > max_value:
-                new_image[i,j] = max_value
-            elif data[i,j] < min_value:
-                new_image[i,j] = min_value
-            temp =[]
-    return new_image.copy()
 
 def write_image(path, img):
     # img = img*(2**16-1)
@@ -302,39 +67,6 @@ def lee_filter(img, size):
     img_weights = img_variance / (img_variance + overall_variance)
     img_output = img_mean + img_weights * (img - img_mean)
     return img_output
-
-def segment(img, blur=0.01, alpha=0.1, beta=0.1, gamma=0.001):
-    height, width = img.shape[0:2]
-    # Initial contour
-    s = np.linspace(0, 2*np.pi, 400)
-    #r = int(height/2*np.ones(len(s)) + height*np.sin(s)/2)
-    #c = int(width/2*np.ones(len(s)) + width*np.cos(s)/2)
-    row = int(height/2)
-    column = int(width/2)
-    r = row + (row-10)*np.sin(s)
-    c = column + (column-10)*np.cos(s)
-    init = np.array([r, c]).T
-
-    # Parameters for Active Contour
-    blur = 0.01
-    alpha = 0.1
-    beta = 0.1
-    gamma = 0.001
-    w_line = -5
-    w_edge = 0
-
-    # Active contour
-    snake = active_contour(gaussian(img, blur), init, alpha, beta, gamma, coordinates='rc')
-    #snake = active_contour(gaussian(img, 1), init, alpha, beta, w_line, w_edge, gamma, coordinates='rc')
-    # boundary_condition='fixed' blur = 1, alpha = 0.1, beta=1, w_line = -5, w_edge=0, gamma = 0.1
-    # Display the image with contour
-    fig, ax = plt.subplots(figsize=(7, 7))
-    ax.imshow(img, cmap=plt.cm.gray)
-    ax.plot(init[:, 1], init[:, 0], '--r', lw=3)
-    ax.plot(snake[:, 1], snake[:, 0], '-b', lw=3)
-    ax.set_xticks([]), ax.set_yticks([])
-    ax.axis([0, img.shape[1], img.shape[0], 0])
-    plt.show()
 
 def filterimage(img):
     #cv2.imshow('i',img)
@@ -395,9 +127,9 @@ def filterimage(img):
 
     plt.show()
 
-def threshold_tb(image, threshold = 150, th_type = 3):
-    alpha = 180
-    beta = 125
+def threshold_tb(image, threshold = 60, th_type = 3):
+    alpha = 100
+    beta = 0
     s = 0
     cv2.namedWindow('Contrast')
     # create trackbars for color change
@@ -421,8 +153,8 @@ def threshold_tb(image, threshold = 150, th_type = 3):
         #3: Threshold to Zero
         #4: Threshold to Zero Inverted
         """
-        _, dst = cv2.threshold(image, threshold, 255, th_type)
-        new_image = dst
+        i = cv2.convertScaleAbs(image, alpha=alpha/100, beta=-1*beta)
+        _, dst = cv2.threshold(i, threshold, 255, th_type)
         cv2.imshow('Threshold', dst)
         k = cv2.waitKey(1) & 0xFF
         if k == 27:
@@ -431,40 +163,10 @@ def threshold_tb(image, threshold = 150, th_type = 3):
     cv2.destroyAllWindows()
     return dst
 
-def adaptive_tb(image, mth1=11, mth2=2, gth1=11, gth2=2):
-    s = 0
-    img = cv2.medianBlur(image,5)
-    cv2.namedWindow('Contrast')
-    # create trackbars for color change
-    cv2.createTrackbar('Mean Threshold 1', 'Contrast', mth1, 255, nothing)
-    cv2.createTrackbar('Mean Threshold 2', 'Contrast', mth2, 255, nothing)
-    cv2.createTrackbar('Gaussian Threshold 1', 'Contrast', gth1, 255, nothing)
-    cv2.createTrackbar('Gaussian Threshold 2', 'Contrast', gth2, 255, nothing)
-    # create switch for ON/OFF functionality
-    cv2.createTrackbar('Switch', 'Contrast', s, 1, nothing)
-    # get current positions of four trackbars
-    while(s == 0):
-        mth1 = cv2.getTrackbarPos('Mean Threshold 1','Contrast')
-        mth2 = cv2.getTrackbarPos('Mean Threshold 2','Contrast')
-        gth1 = cv2.getTrackbarPos('Gaussian Threshold 1','Contrast')
-        gth2 = cv2.getTrackbarPos('Gaussian Threshold 2','Contrast')
-        s = cv2.getTrackbarPos('Switch','Contrast')
-        #_, dst = cv2.threshold(image, threshold, 255, th_type)
-        im1 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
-        im2 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-        cv2.imshow('Image', image)
-        cv2.imshow('AdaptiveMean', im1)
-        cv2.imshow('AdaptiveGaussian', im2)
-        k = cv2.waitKey(1) & 0xFF
-        if k == 27:
-            break
-    cv2.destroyAllWindows()
-    return im1, im2
-
 if __name__=="__main__":
     
     # Image files location 
-    location1 = 'Documents\GitHub\Optic_Disk\Images_Processed\_CS'
+    location1 = 'Documents\GitHub\Optic_Disk\Images\_CS'
     #location2 = 'Documents\GitHub\Optic_Disk\Images_Processed\_OD'
     # Loop through all the images
 
@@ -474,14 +176,82 @@ if __name__=="__main__":
         #image2 = location2 + str(i) + '.jpg'    # Filename
         img1 = cv2.imread(image1,0)              # Read image
         #img2 = cv2.imread(image2,0)             # Read image
-        img1 = cv2.medianBlur(img1,25)
-        img1 = cv2.GaussianBlur(img1,(25,25),0)
-        img1 = cv2.blur(img1,(25,25))
-        threshold_tb(img1)
-        image = img = img1
+        #img1 = cv2.medianBlur(img1,15)
+        #img1 = cv2.GaussianBlur(img1,(15,15),0)
+        #img1 = cv2.blur(img1,(15,15))
+        cv2.imshow('i',img1)
+        img = img1.copy()
+        image = img.copy()
+
+        thresh = threshold_tb(img1, 125, 0)
         
         height, width = img.shape[0:2]
+        pivot = np.zeros((width,1))
+        for b in range(width):
+            for a in range(height):
+                if thresh[a,b] > 200:
+                    pivot[b] = a
+                    break
+
+        maximum = np.amax(pivot)
+        for a in range(width):
+            if pivot[a] == maximum:
+                maxpos = a
+                break
+
+        partl = thresh.copy()
+        partr = thresh.copy()
+
+        for a in range(width):
+            if a > 1*maxpos:
+                partl[:, a] = 0
+            if a < 1*maxpos:
+                partr[:, a] = 0
         
+        for b in range(width):
+            fl = 0
+            for a in range(height):
+                if partl[a,b] > 200 and fl < 20:
+                    fl = fl + 1
+                    continue
+                partl[a,b] = 0
+
+        for b in range(width):
+            fl = 0
+            for a in range(height):
+                if partr[a,b] > 200 and fl < 20:
+                    fl = fl + 1
+                    continue
+                partr[a,b] = 0
+
+        picture = partl + partr
+        cv2.imshow('pic', picture)
+
+        contour1,hierarchy1 = cv2.findContours(partl, 1, 2)
+        contour2,hierarchy2 = cv2.findContours(partr, 1, 2)
+        cnt1 = contour1[0]
+        cnt2 = contour2[0]
+
+        [vx1,vy1,x1,y1] = cv2.fitLine(cnt1, cv2.DIST_L2,0,0.01,0.01)
+        print([vx1,vy1,x1,y1])
+        lefty1 = int((-x1*vy1/vx1) + y1)
+        righty1 = int(((width-x1)*vy1/vx1)+y1)
+        print([lefty1,righty1])
+        #cv2.imshow('l', partl)
+        p = cv2.line(partl,(width-1,righty1),(0,lefty1),(0,255,0),2)
+        cv2.imshow('p',p)
+        q = cv2.drawContours(partl, contour1, -1, (0,255,0), 3)
+        cv2.imshow('l', q)
+
+        [vx2,vy2,x2,y2] = cv2.fitLine(cnt2, cv2.DIST_L2,0,0.01,0.01)
+        print([vx2, vy2, 2, y2])
+        lefty2 = int((-x2*vy2/vx2) + y2)
+        righty2 = int(((width-x2)*vy2/vx2)+y2)
+        print([lefty2,righty2])
+        #cv2.imshow('r', partr)
+        #cv2.line(picture,(width-1,righty2),(0,lefty2),(255,0,0),2) 
+        
+        cv2.waitKey(0)
         #threshold_tb(image)
 
         #path = 'Documents\GitHub\Optic_Dsk\Images_Processed\_CS' + str(i) + '.jpeg'
