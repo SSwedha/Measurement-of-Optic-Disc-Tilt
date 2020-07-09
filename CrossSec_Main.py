@@ -172,13 +172,15 @@ if __name__=="__main__":
             raise Exception("Could not write image")
         print('saved')
         """
-        kernel = np.ones((5,5),np.uint8)
 
+        cv2.imshow('picture', picture)
+
+        kernel = np.ones((5,5),np.uint8)
         erosion = cv2.erode(picture,kernel,iterations = 2)
         dilation = cv2.dilate(erosion,kernel,iterations = 3)
         opening = cv2.morphologyEx(picture, cv2.MORPH_OPEN, kernel)
         #closing = cv2.morphologyEx(picture, cv2.MORPH_CLOSE, kernel)
-        cv2.imshow('dil', dilation)
+        cv2.imshow('ero-dil', dilation)
         #cv2.imshow('ero', erosion)
         cv2.imshow('ope', opening)
         #cv2.imshow('clo', closing)
