@@ -34,21 +34,6 @@ def auto_canny(image, sigma = 0.7):
 def nothing(x):
     pass
 
-def crop(img, i):
-    # Returns dimensions of image
-    height, width = img.shape[0:2]
-    # Top and Bottom range
-    startrow = int(height*.12)
-    endrow = int(height*.88)
-    startcol = int(width*.05)
-    endcol = int(width*0.95)
-    img = img[startrow:endrow, startcol:endcol]
-    height, width = img.shape[0:2]
-    image = img[0:height, startcol:endcol]
-    height, width = img.shape[0:2]
-    image = image[20:520, 20:520]
-    return image
-
 def write_image(path, img):
     # img = img*(2**16-1)
     # img = img.astype(np.uint16)
@@ -68,68 +53,9 @@ def lee_filter(img, size):
     img_output = img_mean + img_weights * (img - img_mean)
     return img_output
 
-def filterimage(img):
-    #cv2.imshow('i',img)
-    #croppedImage = img[startRow:endRow, startCol:endCol]
-     
-    kernel = np.ones((5,5),np.uint8)
-
-    dilation = cv2.dilate(img,kernel,iterations = 1)
-    blur = dilation
-    #blur = cv2.GaussianBlur(dilation,(5,5),0)
-    #blur = cv2.blur(dilation,(5,5))
-    #plt.imshow(blur,cmap = 'gray')
-    #plt.show()
-    #dilation = cv2.dilate(blur,kernel,iterations = 1)
-    #blur = cv2.GaussianBlur(dilation,(5,5),0)
-    #blur = cv2.GaussianBlur(im,(5,5),0)
-
-    erosion = cv2.erode(blur,kernel,iterations = 1)
-
-    #blur = cv2.blur(erosion,(10,10),0)
-    plt.imshow(blur,cmap = 'gray')
-    plt.show()
-
-    opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
-    closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
-    gradient = cv2.morphologyEx(blur, cv2.MORPH_GRADIENT, kernel)
-    dil = cv2.erode(gradient,kernel,iterations = 1) 
-
-    plt.subplot(2,3,1),plt.imshow(img,cmap = 'gray')
-    plt.title('Original'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,2),plt.imshow(erosion,cmap = 'gray')
-    plt.title('Erosion'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,3),plt.imshow(dilation,cmap = 'gray')
-    plt.title('Dilation'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,4),plt.imshow(opening,cmap = 'gray')
-    plt.title('Opening'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,5),plt.imshow(dil,cmap = 'gray')
-    plt.title('Dil'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,6),plt.imshow(gradient,cmap = 'gray')
-    plt.title('Gradient'), plt.xticks([]), plt.yticks([])
-    plt.show()
-
-    laplacian = cv2.Laplacian(img,cv2.CV_64F)
-    sobelx = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
-    sobely = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
-    sobel = cv2.addWeighted(np.absolute(sobelx), 0.5, np.absolute(sobely), 0.5, 0)
-    #sobel = cv2.Sobel(img,cv2.CV_64F,1,1,ksize=5)
-    sobel = cv2.erode(sobel,kernel,iterations = 1)
-
-    plt.subplot(2,2,1),plt.imshow(sobel,cmap = 'gray')
-    plt.title('Sobel'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,2,2),plt.imshow(laplacian,cmap = 'gray')
-    plt.title('Laplacian'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,2,3),plt.imshow(sobelx,cmap = 'gray')
-    plt.title('Sobel X'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,2,4),plt.imshow(sobely,cmap = 'gray')
-    plt.title('Sobel Y'), plt.xticks([]), plt.yticks([])
-
-    plt.show()
-
-def threshold_tb(image, threshold = 60, th_type = 3):
+def threshold_tb(image, threshold = 110, th_type = 3):
     alpha = 100
-    beta = 0
+    beta = 00
     s = 0
     cv2.namedWindow('Contrast')
     # create trackbars for color change
@@ -146,22 +72,25 @@ def threshold_tb(image, threshold = 60, th_type = 3):
         threshold = cv2.getTrackbarPos('Threshold','Contrast')
         th_type = cv2.getTrackbarPos('Type','Contrast')
         s = cv2.getTrackbarPos('Switch','Contrast')
-        """
-        #0: Binary
-        #1: Binary Inverted
-        #2: Threshold Truncated
-        #3: Threshold to Zero
-        #4: Threshold to Zero Inverted
-        """
-        i = cv2.convertScaleAbs(image, alpha=alpha/100, beta=-1*beta)
-        _, dst = cv2.threshold(i, threshold, 255, th_type)
-        cv2.imshow('Threshold', dst)
+
+        _, dst = cv2.threshold(image, 70, 255, 3)
+        i = cv2.convertScaleAbs(dst, alpha=alpha/100, beta=-1*beta)
+        cv2.imshow('i',i)
+        
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(15,15))
+        #i = clahe.apply(i)
+
+        _, t = cv2.threshold(i, threshold, 255, 0)
+        cv2.imshow('Threshold', t)
+
+        #cv2.imshow('CL--1', dst)
+
         k = cv2.waitKey(1) & 0xFF
         if k == 27:
             break
     
     cv2.destroyAllWindows()
-    return dst
+    return t
 
 if __name__=="__main__":
     
@@ -176,15 +105,14 @@ if __name__=="__main__":
         #image2 = location2 + str(i) + '.jpg'    # Filename
         img1 = cv2.imread(image1,0)              # Read image
         #img2 = cv2.imread(image2,0)             # Read image
-        #img1 = cv2.medianBlur(img1,15)
-        #img1 = cv2.GaussianBlur(img1,(15,15),0)
+        #img1 = cv2.medianBlur(img1,3)
+        img1 = cv2.GaussianBlur(img1,(5,5),0)
         #img1 = cv2.blur(img1,(15,15))
-        cv2.imshow('i',img1)
         img = img1.copy()
         image = img.copy()
 
-        thresh = threshold_tb(img1, 125, 0)
-        
+        thresh = threshold_tb(img1)
+
         height, width = img.shape[0:2]
         pivot = np.zeros((width,1))
         for b in range(width):
@@ -200,22 +128,63 @@ if __name__=="__main__":
                 break
 
         partl = thresh.copy()
-        partr = thresh.copy()
-
-        for a in range(width):
-            if a > 1*maxpos:
-                partl[:, a] = 0
-            if a < 1*maxpos:
-                partr[:, a] = 0
         
+        #cv2.imshow('1-bef',partl)
+        #cv2.imshow('r',partr)
+
         for b in range(width):
+            fl = 0
+            for a in range(height):
+                if partl[a,b] > 200:
+                    fl = fl + 1
+                if partl[a,b] < 10 and fl < 20:
+                    partl[a,b] = 255
+                if fl > 20:
+                    break
+            fl = 0
+            for a in range(height):
+                if partl[a,b] < 10:
+                    fl = fl + 1
+                if partl[a,b] > 200 and fl < 20:
+                    partl[a,b] = 0
+                if fl > 20:
+                    break
             fl = 0
             for a in range(height):
                 if partl[a,b] > 200 and fl < 20:
                     fl = fl + 1
                     continue
                 partl[a,b] = 0
+        
+        partr = partl.copy()
 
+        for a in range(width):
+            if a > 0.6*maxpos:
+                partl[:, a] = 0
+            if a < 1.4*maxpos:
+                partr[:, a] = 0
+        picture = partl + partr
+        
+        """
+        path = 'Documents\GitHub\Optic_Disk\Images_Processed\_CS' + str(i) + '.jpeg'
+        cv2.imwrite(path, picture)
+        if not cv2.imwrite(path, picture):
+            raise Exception("Could not write image")
+        print('saved')
+        """
+        kernel = np.ones((5,5),np.uint8)
+
+        erosion = cv2.erode(picture,kernel,iterations = 2)
+        dilation = cv2.dilate(erosion,kernel,iterations = 3)
+        opening = cv2.morphologyEx(picture, cv2.MORPH_OPEN, kernel)
+        #closing = cv2.morphologyEx(picture, cv2.MORPH_CLOSE, kernel)
+        cv2.imshow('dil', dilation)
+        #cv2.imshow('ero', erosion)
+        cv2.imshow('ope', opening)
+        #cv2.imshow('clo', closing)
+        cv2.waitKey(0) 
+
+        """
         for b in range(width):
             fl = 0
             for a in range(height):
@@ -223,7 +192,7 @@ if __name__=="__main__":
                     fl = fl + 1
                     continue
                 partr[a,b] = 0
-
+        
         picture = partl + partr
         cv2.imshow('pic', picture)
 
@@ -252,6 +221,7 @@ if __name__=="__main__":
         #cv2.line(picture,(width-1,righty2),(0,lefty2),(255,0,0),2) 
         
         cv2.waitKey(0)
+        """
         #threshold_tb(image)
 
         #path = 'Documents\GitHub\Optic_Dsk\Images_Processed\_CS' + str(i) + '.jpeg'
@@ -297,6 +267,5 @@ if __name__=="__main__":
 
         dst_bw = cv2.fastNlMeansDenoisingMulti(noisy, 2, 5, None, 4, 7, 35)
         """
-    
-        cv2.waitKey(0)
+
     cv2.destroyAllWindows

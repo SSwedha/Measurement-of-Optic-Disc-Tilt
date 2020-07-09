@@ -34,21 +34,6 @@ def auto_canny(image, sigma = 0.7):
 def nothing(x):
     pass
 
-def crop(img, i):
-    # Returns dimensions of image
-    height, width = img.shape[0:2]
-    # Top and Bottom range
-    startrow = int(height*.12)
-    endrow = int(height*.88)
-    startcol = int(width*.05)
-    endcol = int(width*0.95)
-    img = img[startrow:endrow, startcol:endcol]
-    height, width = img.shape[0:2]
-    image = img[0:height, startcol:endcol]
-    height, width = img.shape[0:2]
-    image = image[20:520, 20:520]
-    return image
-
 def write_image(path, img):
     # img = img*(2**16-1)
     # img = img.astype(np.uint16)
@@ -67,65 +52,6 @@ def lee_filter(img, size):
     img_weights = img_variance / (img_variance + overall_variance)
     img_output = img_mean + img_weights * (img - img_mean)
     return img_output
-
-def filterimage(img):
-    #cv2.imshow('i',img)
-    #croppedImage = img[startRow:endRow, startCol:endCol]
-     
-    kernel = np.ones((5,5),np.uint8)
-
-    dilation = cv2.dilate(img,kernel,iterations = 1)
-    blur = dilation
-    #blur = cv2.GaussianBlur(dilation,(5,5),0)
-    #blur = cv2.blur(dilation,(5,5))
-    #plt.imshow(blur,cmap = 'gray')
-    #plt.show()
-    #dilation = cv2.dilate(blur,kernel,iterations = 1)
-    #blur = cv2.GaussianBlur(dilation,(5,5),0)
-    #blur = cv2.GaussianBlur(im,(5,5),0)
-
-    erosion = cv2.erode(blur,kernel,iterations = 1)
-
-    #blur = cv2.blur(erosion,(10,10),0)
-    plt.imshow(blur,cmap = 'gray')
-    plt.show()
-
-    opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
-    closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
-    gradient = cv2.morphologyEx(blur, cv2.MORPH_GRADIENT, kernel)
-    dil = cv2.erode(gradient,kernel,iterations = 1) 
-
-    plt.subplot(2,3,1),plt.imshow(img,cmap = 'gray')
-    plt.title('Original'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,2),plt.imshow(erosion,cmap = 'gray')
-    plt.title('Erosion'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,3),plt.imshow(dilation,cmap = 'gray')
-    plt.title('Dilation'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,4),plt.imshow(opening,cmap = 'gray')
-    plt.title('Opening'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,5),plt.imshow(dil,cmap = 'gray')
-    plt.title('Dil'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,3,6),plt.imshow(gradient,cmap = 'gray')
-    plt.title('Gradient'), plt.xticks([]), plt.yticks([])
-    plt.show()
-
-    laplacian = cv2.Laplacian(img,cv2.CV_64F)
-    sobelx = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
-    sobely = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
-    sobel = cv2.addWeighted(np.absolute(sobelx), 0.5, np.absolute(sobely), 0.5, 0)
-    #sobel = cv2.Sobel(img,cv2.CV_64F,1,1,ksize=5)
-    sobel = cv2.erode(sobel,kernel,iterations = 1)
-
-    plt.subplot(2,2,1),plt.imshow(sobel,cmap = 'gray')
-    plt.title('Sobel'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,2,2),plt.imshow(laplacian,cmap = 'gray')
-    plt.title('Laplacian'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,2,3),plt.imshow(sobelx,cmap = 'gray')
-    plt.title('Sobel X'), plt.xticks([]), plt.yticks([])
-    plt.subplot(2,2,4),plt.imshow(sobely,cmap = 'gray')
-    plt.title('Sobel Y'), plt.xticks([]), plt.yticks([])
-
-    plt.show()
 
 def threshold_tb(image, threshold = 60, th_type = 3):
     alpha = 100
@@ -173,10 +99,11 @@ if __name__=="__main__":
     
     # Image files location 
     location1 = 'OCT_scan'
+    location1 = 'Documents\GitHub\Optic_Disk\Images\_CS'
     #location2 = 'Documents\GitHub\Optic_Disk\Images_Processed\_OD'
     # Loop through all the images
 
-    for i in range(0, 28):
+    for i in range(1, 29):
 
         image1 = location1 + str(i) + '.jpeg'    # Filename
         #image2 = location2 + str(i) + '.jpg'    # Filename
@@ -217,6 +144,7 @@ if __name__=="__main__":
                 partl[:, a] = 0
             if a < 1*maxpos:
                 partr[:, a] = 0
+
         for b in range(int(0.25*width)):
             for a in range(int(0.75*height),height,1):
                 partl[a,b] = 0
@@ -297,7 +225,6 @@ if __name__=="__main__":
         for b in range(int(0.4*width),int(0.7*width),1):
             for a in range(height):
                 picture[a,b] = 255
-
         
         picture = np.invert(picture)
         
