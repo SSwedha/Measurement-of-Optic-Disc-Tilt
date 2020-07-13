@@ -1,3 +1,4 @@
+import os
 import cv2
 import time
 import math
@@ -19,18 +20,6 @@ from skimage.filters import meijering, sato, frangi, hessian
 from scipy.ndimage.filters import uniform_filter
 from scipy.ndimage.measurements import variance
 
-def auto_canny(image, sigma = 0.7):
-    # compute the median of the single channel pixel intensities
-    v = np.median(image)
-    # apply automatic Canny edge detection using the computed median
-    lower = int(max(0, (1.0 - sigma) * v))
-    upper = int(min(255, (1.0 + sigma) * v)/2)
-    #print(lower)
-    #print(upper)
-    edged = cv2.Canny(image, lower, upper)
-    # return the edged image
-    return edged
-
 def nothing(x):
     pass
 
@@ -44,19 +33,13 @@ def write_image(path, img):
     # Save file
     plt.savefig(path, bbox_inches='tight')#, img, format = 'png')
 
-def lee_filter(img, size):
-    img_mean = uniform_filter(img, (size, size))
-    img_sqr_mean = uniform_filter(img**2, (size, size))
-    img_variance = img_sqr_mean - img_mean**2
-    overall_variance = variance(img)
-    img_weights = img_variance / (img_variance + overall_variance)
-    img_output = img_mean + img_weights * (img - img_mean)
-    return img_output
-
 def threshold_tb(image, threshold = 110, th_type = 3):
     alpha = 100
     beta = 00
     s = 0
+    threshold = 125
+
+    """
     cv2.namedWindow('Contrast')
     # create trackbars for color change
     cv2.createTrackbar('alpha','Contrast', alpha, 255, nothing)
@@ -83,20 +66,29 @@ def threshold_tb(image, threshold = 110, th_type = 3):
         _, t = cv2.threshold(i, threshold, 255, 0)
         cv2.imshow('Threshold', t)
 
-        #cv2.imshow('CL--1', dst)
-
         k = cv2.waitKey(1) & 0xFF
         if k == 27:
             break
+    """
+    i = cv2.convertScaleAbs(image, alpha=alpha/100, beta=-1*beta)
+    _, dst = cv2.threshold(i, threshold, 255, th_type)
     
-    cv2.destroyAllWindows()
-    return t
+    #cv2.destroyAllWindows()
+    
+    return dst
+
+def load_images_from_folder(folder):
+    images = []
+    for filename in os.listdir(folder):
+        img = cv2.imread(os.path.join(folder,filename))
+        if img is not None:
+            images.append(img)
+    return images
 
 if __name__=="__main__":
     
     # Image files location 
     location1 = 'Documents\GitHub\Optic_Disk\Images\_CS'
-    #location2 = 'Documents\GitHub\Optic_Disk\Images_Processed\_OD'
     # Loop through all the images
 
     for i in range(1, 29):
@@ -223,51 +215,6 @@ if __name__=="__main__":
         #cv2.line(picture,(width-1,righty2),(0,lefty2),(255,0,0),2) 
         
         cv2.waitKey(0)
-        """
-        #threshold_tb(image)
-
-        #path = 'Documents\GitHub\Optic_Dsk\Images_Processed\_CS' + str(i) + '.jpeg'
-        
-        #image2 = crimmins(image)
-        #cv2.imwrite(path, image2) 
-        #print('Image ' + str(i) + ' - done')
-        
-        #image = img
-        #equ = cv2.equalizeHist(image)
-        #equ = image - image2
-        
-        """
-        for i in range(height):
-            for j in range(width):
-                if (mask[i,j] != 0 and mask[i,j] != 255):
-                    #final[i,j] = mask[i,j]
-                    final[i,j] = 255 - final [i,j]
-        
-        plt.subplot(1,3,1),plt.imshow(img,cmap = 'gray')
-        plt.title('IMG'), plt.xticks([]), plt.yticks([])
-        #plt.subplot(1,3,2),plt.imshow(equ,cmap = 'gray')
-        #plt.title('EQU'), plt.xticks([]), plt.yticks([]) 
-        plt.subplot(1,3,3),plt.imshow(final,cmap = 'gray')
-        plt.title('Final'), plt.xticks([]), plt.yticks([])
-        plt.show()
-        """
-        
-        """
-        crim = cl2
-        unsharp = Image.fromarray(crim.astype('uint8'))
-        unsharp_class = unsharp.filter(ImageFilter.UnsharpMask(radius=2, percent=150))
-        unsharp = np.array(unsharp_class)
-        lee = lee_filter(img,10)
-        conservative = conservative_smoothing_gray(unsharp,9)
-        contrast = cv2.convertScaleAbs(conservative,alpha=1.8,beta=-120)
-        
-        #dst_col = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        gray = np.float64(gray)
-        # Convert back to uint8
-        noisy = np.uint8(np.clip(img,0,255))
-
-        dst_bw = cv2.fastNlMeansDenoisingMulti(noisy, 2, 5, None, 4, 7, 35)
         """
 
     cv2.destroyAllWindows
