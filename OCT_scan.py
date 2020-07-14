@@ -119,16 +119,17 @@ if __name__=="__main__":
 
     images, filenames = load_images_from_folder(location)
     
+    global_threshold = 100
+
     wb = xlwt.Workbook()
+    sheet_name = 'Threshold = ' + str(100)
     sheet1 = wb.add_sheet('Sheet 1')
     sheet1.write(0, 0, 'Image')
-    sheet1.write(0, 1, 'No Erosion, No Dilation')
+    sheet1.write(0, 1, 'No Erosion & Dilation')
     sheet1.write(0, 2, '1 Erosion, 2 Dilation')
     sheet1.write(0, 3, '2 Erosion, 3 Dilation')
     sheet1.write(0, 4, 'Image J Marking')
     print('\nInitializing...')
-
-    global_threshold = 100
     
     path = 'Documents\GitHub\Optic_Disk\OCT_Tilt\\' + str(global_threshold) + '\\'
     save = 'Documents\GitHub\Optic_Disk\OCT_Resuts'+ str(global_threshold) +'.xls'
@@ -339,9 +340,9 @@ if __name__=="__main__":
             # cv2.imshow(filenames[index], picture_r)
             # cv2.waitKey(0)
 
-            path1 = path + str(index+1) + '_case' + str(case) + '_pre_' + filenames[index]
-            path2 = path + str(index+1) + '_case' + str(case) + '_post_' + filenames[index]
-            path3 = path + str(index+1) + '_case' + str(case) + '_' + filenames[index]
+            path1 = path + 'Temp\\' + str(index+1) + '_case' + str(case) + '_pre_' + filenames[index]
+            path2 = path + 'Temp\\' + str(index+1) + '_case' + str(case) + '_post_' + filenames[index]
+            path3 = path + str(index+1) + '_case' + str(case) + '_final_' + filenames[index]
 
             try:
                 cv2.imwrite(path1, picture)
