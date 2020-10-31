@@ -1,3 +1,5 @@
+#If you would like to know more, contact us at s.swedha.krmg@gmail.com (Swedha S) or gudapatinitish9@gmail.com (G Nitish)
+#You may go to the master branch to see our work
 import os
 import cv2
 import xlwt
