@@ -1,4 +1,4 @@
-#If you would like to know more, contact us at s.swedha.krmg@gmail.com (S Swedha) or gudapatinitish9@gmail.com (G Nitish)
+#If you would like to know more, contact us at gudapatinitish9@gmail.com (G Nitish) or s.swedha.krmg@gmail.com (S Swedha).
 #You may go to the master branch to see our work (check our abstract submitted to the conference on Ophthalmic Technologies XXXI, part of SPIE BiOS)
 import os
 import cv2
