@@ -6,7 +6,14 @@ The horizontal optic disc tilt was noted both in emmetropic and myopic eyes. We 
 
 1.	Ang M, Wong CW, Hoang QV, Cheung GC, Lee SY, Chia A, Saw SM, Ohno-Matsui K, Schmetterer L. Imaging in myopia: potential biomarkers, current challenges and future developments. British Journal of Ophthalmology. 2019;103(6):855-62.
 
+The abstract of this work has been accepted by SPIE (Society of Photo-Optical Instrumentation Engineers) BiOS at the conference Ophthalmic Technologies XXXI.
+
+Further work will be continued.
+
+SPIE BiOS https://spie.org/conferences-and-exhibitions/photonics-west/bios?SSO=1
+
 Team Member: G Nitish (https://github.com/gnitish18)
+
 Guided by Dr Vasudevan Lakshminarayanan, Professor of  Physics, Systems Design Engineering, and Electrical and Computer Engineering, University of Waterloo and Mr. J. Jothi Balaji, Department of Optometry, Medical Research Foundation, Chennai.
 
 (check files: S_Swedha_Report_ODT.pdf and OCT_Main.py under 'Codes')
